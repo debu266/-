@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="mode-v2" data-scene="agent">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>DEPUTY · ADVANCED OPERATIONS SYSTEM — 研究档案终端 v2（全息信息对象）</title>
+<!--
+  ============================================================================
+  DEPUTY — Rhine Lab Research Archive Terminal ／ V2「Holographic Information Object」
+  ---------------------------------------------------------------------------
+  唯一最重要的原则：Rhine Lab 决定「它是谁」，Holographic UI 决定「它如何存在」。
+    静止第一眼 = Rhine Lab Research Archive（不是 COD11、不是军事 HUD）。
+    操作起来   = 2020s/2030s 未来研究终端（信息对象被系统投影出来）。
+
+  主体（80–90%）＝增量继承自 atlas-rhine-v1.html，信息架构一字未改：
+    shell 三行 / 品牌带 / 左 rail / spine / 非对称四列（88+22+1fr+404）/
+    archive array（folio 号栏 + 分组带 + 强墨线列头 + 右端大数栏）/
+    record · folio · evidence 语言 / 编号体系 / field labels /
+    大标题＋小 metadata 层级 / 语义色
+      amber=institution·authorization·attention｜cyan=live·active·dynamic
+      red=failure·danger｜neutral=archive·static（不新建语义色）。
+  增量（10–20%）＝Motion ＋ 全息信息对象 ＋ 空间深度。
+
+  可辨性改进：吸收 atlas-rhine-v2.html 的「实心 amber 主按钮／描边次按钮／红描边取消／
+    cyan 字段标签／更亮大数字」，只作可辨性，不作主视觉（v2 不是本版主视觉）。
+
+  内容唯一事实来源 = recon/20260927/atlas/panel-ui-inventory.md
+    §③ 字段绑定   §⑤ 真实文案（中英两套）   §⑥ 状态→色调   §⑦ 冻结清单
+    实例读数逐字取自 v1 内联的真实快照：
+      qoder(P1 待收9 累计156) dsh2(P7 8/13) jc2(P3 20/87 failed) loomy(P4 10/163)
+      dsh(P6 5/129) generic(P5 0/0 已停用)；20260926_075800-1fde57；
+      符合 ❓ · 已跑 24m42s · 数据龄 9s · 停滞 10s · 通道 9/10 可用 ·
+      SNAPSHOT 09-26 00:17:20 · 在跑2 待收88 累计1116 单 · 公告 6 活跃/213 归档。
+    取不到的读数一律「—」并注明来源缺项，绝不编造数字（冻结清单 §⑦-13）。
+
+  外部参考只借「技术」，不搬「皮肤」（逐条去向见文末 REFERENCE MAPPING 注释块）。
+
+  自包含：零外链、零 CDN、零外链字体；无 canvas 元素、无 img 元素、无外部库、无三维引擎。
+  动效 = 纯 CSS ＋ Web Animations API 语义层；统一走 motion token / primitive，
+    严禁把动画硬编码进任一 panel。
+  ============================================================================
+-->
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   0 · TOKENS
+   ══════════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ── 材质 / 语义色（继承 v1；不新建语义色）── */
+  --base:#111519; --layer1:#181d22; --layer2:#1f252a; --layer3:#282f34;
+  --ink:#e9e8e1; --ink-2:#c3c7c2; --ink-3:#9aa2a4; --ink-4:#8b959a; --ink-5:#687279;
+  --rule-1:rgba(166,181,188,.09); --rule-2:rgba(166,181,188,.17);
+  --rule-3:rgba(166,181,188,.26); --rule-4:rgba(166,181,188,.40);
+  --amber:#ff8732; --amber-hi:#ffa863; --amber-lo:#ba5b16; --amber-tint:rgba(255,135,50,.11);
+  --amber-edge:#ffd79a; --on-amber:#141414;
+  --cyan:#5bc2d8;  --cyan-hi:#8ee0f0;  --cyan-lo:#2d7d92;  --cyan-tint:rgba(91,194,216,.11);
+  --red:#f46458;   --red-hi:#ff9288;   --red-tint:rgba(244,100,88,.12);
+  --neutral:#7c868b; --neutral-hi:#aeb8bc;
+  --f-disp:Bahnschrift,"DIN Alternate","Arial Narrow","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --f-mono:"Cascadia Mono",Consolas,ui-monospace,"Courier New",monospace;
+  --gut:30px; --met:112px;
+
+  /* ── MOTION TOKENS（唯一真源；panel 只声明角色，不写时长）── */
+  --m-stagger:140;                    /* 组装层间步长 0/140/280/420/560/700/840 */
+  --m-dur-edge:420ms;  --m-dur-geo:520ms;      --m-dur-identity:440ms; --m-dur-data:460ms;
+  --m-dur-meta:400ms;  --m-dur-live:620ms;     --m-dur-hint:320ms;
+  --m-ease:cubic-bezier(.22,.86,.28,1);
+  --m-ease-line:cubic-bezier(.12,.92,.2,1);
+  --m-ease-out:cubic-bezier(.4,0,.2,1);
+  --m-dur-focus:280ms; --m-dur-open:320ms; --m-dur-close:260ms;
+  --m-dur-update:640ms; --m-update-at:1600;  /* updating：只有变化字段在动 */
+  --m-update-end:2240;
+  --m-dur-fault:920ms;  --m-dur-proj:900ms;  --m-dur-plot:360ms;
+  --m-rise:12px;                        /* 组装位移量 */
+
+  /* ── DEPTH TOKENS（L0 背景 → L4 全息覆盖）── */
+  --l0-op:.55;                          /* 档案网格底 */
+  --l3-blur:7px;  --l3-op:.74;          /* 活动信息对象面 */
+  --l4-blur:13px; --l4-op:.92;          /* 悬浮信息 / 瞬时覆盖层 */
+  --edge-light:inset 0 1px 0 rgba(233,232,225,.09);
+  --glow-active:0 0 30px rgba(255,135,50,.15),0 0 1px rgba(255,168,99,.55);
+  --glow-live:0 0 22px rgba(91,194,216,.20);
+  --glow-fault:0 0 20px rgba(244,100,88,.26);
+  --par:8px;                            /* parallax 位移基数（JS 改 --pk/--pky）*/
+  --seek:0;                             /* 全局时间轴定位（帧捕获；0=实时播放）*/
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--base); color:var(--ink);
+  font-family:var(--f-disp); font-size:13px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+::selection{background:rgba(255,135,50,.28); color:var(--ink);}
+:focus-visible{outline:1px solid var(--amber); outline-offset:2px;}
+h1,h2,h3,h4,p,ul,ol,li,dl,dt,dd,figure{margin:0;padding:0;}
+ul,ol{list-style:none;}
+b,strong{font-weight:600;}
+.mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums;}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   1 · MOTION PRIMITIVES —— 全站唯一动画定义处（统一动效语义层）
+   ── reveal = 数据装载 ｜ line draw = 结构构建(construct) ｜ glow = active
+   ── dim = de-focus ｜ red pulse = failure ｜ cyan 流动 = live data
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 所有 primitive 共用同一时间基准：delay = (层延迟 − 全局时间轴位)
+   —— 选择器清单必须与 JS 的 ANIM_SEL 一致，否则该 primitive 会脱轨于时间轴 */
+[data-m],
+[data-m-line]>*,[data-m-stag]>*,[data-m-swap]>*,
+.cell.chg>.m-upd,.chg .vl,.m-upd-seal,.evi.is-fault,.age-cell.is-upd{
+  animation-fill-mode:both;
+  animation-delay:calc((var(--d,0) - var(--seek,0)) * 1ms);
+}
+[data-m],
+.cell.chg>.m-upd,.chg .vl,.m-upd-seal,.evi.is-fault,.age-cell.is-upd{animation-timing-function:var(--m-ease);}
+[data-m-line]>*{animation-timing-function:var(--m-ease-line);}
+[data-m-stag]>*,[data-m-swap]>*{animation-timing-function:var(--m-ease);}
+
+/* ① 边界 / 定位线 —— 0ms          ② 结构几何 —— 140ms
+   ③ 身份 / 标题 —— 280ms          ④ 主数据 —— 420ms
+   ⑤ 次级 metadata —— 560ms        ⑥ live / status —— 700ms
+   ⑦ 交互提示 —— 840ms             ⑧ updating —— --m-update-at
+   ⑨ 更新封签 —— --m-update-end    ⑩ fault —— 局部红脉冲 */
+.m-edge { animation-name:m-edge;  animation-duration:var(--m-dur-edge);     --d:0; }
+.m-geo  { animation-name:m-geo;   animation-duration:var(--m-dur-geo);      --d:var(--m-stagger); }
+.m-id   { animation-name:m-id;    animation-duration:var(--m-dur-identity); --d:calc(var(--m-stagger) * 2); }
+.m-data { animation-name:m-data;  animation-duration:var(--m-dur-data);     --d:calc(var(--m-stagger) * 3); }
+.m-meta { animation-name:m-meta;  animation-duration:var(--m-dur-meta);     --d:calc(var(--m-stagger) * 4); }
+.m-live { animation-name:m-live;  animation-duration:var(--m-dur-live);     --d:calc(var(--m-stagger) * 5); }
+.m-hint { animation-name:m-hint;  animation-duration:var(--m-dur-hint);     --d:calc(var(--m-stagger) * 6); }
+.m-upd  { animation-name:m-upd;   animation-duration:var(--m-dur-update);   --d:var(--m-update-at); }
+.m-upd-seal{ animation-name:m-hint; animation-duration:var(--m-dur-hint);   --d:var(--m-update-end); }
+.m-fault{ animation-name:m-fault; animation-duration:var(--m-dur-fault);    --d:var(--fault-at,0); }
+.m-proj { animation-name:rl-proj;  animation-duration:var(--m-dur-proj);    --d:60; }
+.m-plot { animation-name:m-plot;  animation-duration:var(--m-dur-plot); }
+
+/* 层内二级错峰（几何迹线 / metadata 网格）：不给每个元素写 --d，走序号 */
+[data-m-line]>*{animation-duration:var(--m-dur-geo);}
+[data-m-line]>.g-h{animation-name:m-line-h; transform-origin:0 50%;}
+[data-m-line]>.g-v{animation-name:m-line-v; transform-origin:50% 0;}
+[data-m-line]>*:nth-child(1){--d:calc(var(--m-stagger) + 0);}
+[data-m-line]>*:nth-child(2){--d:calc(var(--m-stagger) + 70);}
+[data-m-line]>*:nth-child(3){--d:calc(var(--m-stagger) + 140);}
+[data-m-line]>*:nth-child(4){--d:calc(var(--m-stagger) + 210);}
+[data-m-line]>*:nth-child(5){--d:calc(var(--m-stagger) + 280);}
+[data-m-stag]>*{animation-name:m-meta; animation-duration:var(--m-dur-meta);}
+[data-m-stag]>*:nth-child(1){--d:calc(var(--m-stagger) * 4 + 0);}
+[data-m-stag]>*:nth-child(2){--d:calc(var(--m-stagger) * 4 + 45);}
+[data-m-stag]>*:nth-child(3){--d:calc(var(--m-stagger) * 4 + 90);}
+[data-m-stag]>*:nth-child(4){--d:calc(var(--m-stagger) * 4 + 135);}
+[data-m-stag]>*:nth-child(5){--d:calc(var(--m-stagger) * 4 + 180);}
+[data-m-stag]>*:nth-child(6){--d:calc(var(--m-stagger) * 4 + 225);}
+[data-m-stag]>*:nth-child(7){--d:calc(var(--m-stagger) * 4 + 270);}
+[data-m-stag]>*:nth-child(8){--d:calc(var(--m-stagger) * 4 + 315);}
+
+/* 档案阵列的「绘图」也并入同一时间轴（v1 rl-plot 升格为 primitive）*/
+.record:nth-of-type(1){--d:0;}  .record:nth-of-type(2){--d:40;}
+.record:nth-of-type(3){--d:80;} .record:nth-of-type(4){--d:120;}
+.record:nth-of-type(5){--d:160;}.record:nth-of-type(6){--d:200;}
+
+@keyframes m-edge{
+  from{opacity:0; clip-path:inset(0 58% 0 0);}
+  45%{opacity:1;}
+  to{opacity:1; clip-path:inset(0 0 0 0);}
+}
+@keyframes m-geo{
+  from{opacity:0; clip-path:inset(0 0 0 100%);}
+  55%{opacity:.9;}
+  to{opacity:1; clip-path:inset(0 0 0 0);}
+}
+@keyframes m-id{
+  from{opacity:0; clip-path:inset(0 0 100% 0); transform:translateY(calc(var(--m-rise) * -1));}
+  to{opacity:1; clip-path:inset(0 0 0 0); transform:translateY(0);}
+}
+@keyframes m-data{
+  from{opacity:0; clip-path:inset(0 100% 0 0); transform:translateX(-8px); filter:blur(5px);}
+  to{opacity:1; clip-path:inset(0 0 0 0); transform:translateX(0); filter:blur(0);}
+}
+@keyframes m-meta{ from{opacity:0; transform:translateY(9px);} to{opacity:1; transform:translateY(0);} }
+@keyframes m-live{ from{opacity:0;} to{opacity:1;} }
+@keyframes m-hint{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+@keyframes m-line-h{ from{transform:scaleX(0); opacity:.15;} to{transform:scaleX(1); opacity:1;} }
+@keyframes m-line-v{ from{transform:scaleY(0); opacity:.15;} to{transform:scaleY(1); opacity:1;} }
+@keyframes m-plot{ from{clip-path:inset(0 100% 0 0);} to{clip-path:inset(0 0 0 0);} }
+@keyframes m-upd{
+  0%  {box-shadow:inset 0 0 0 0 rgba(91,194,216,0); background-color:transparent;}
+  16% {box-shadow:inset 4px 0 0 var(--cyan),0 0 0 1px var(--cyan),0 0 20px rgba(91,194,216,.35);
+       background-color:rgba(91,194,216,.22);}
+  62% {box-shadow:inset 4px 0 0 var(--cyan),0 0 0 1px rgba(91,194,216,.42);
+       background-color:rgba(91,194,216,.10);}
+  100%{box-shadow:inset 0 0 0 0 rgba(91,194,216,0); background-color:transparent;}
+}
+@keyframes m-swap-old{ from{opacity:1; transform:translateY(0);} to{opacity:0; transform:translateY(-7px);} }
+@keyframes m-swap-new{ from{opacity:0; transform:translateY(7px);} to{opacity:1; transform:translateY(0);} }
+@keyframes m-upd-tint{ 0%,100%{color:var(--ink-2);} 18%,58%{color:var(--cyan-hi);} }
+@keyframes m-fault{
+  0%  {box-shadow:inset 0 0 0 0 rgba(244,100,88,0); border-color:var(--rule-2);}
+  14% {box-shadow:inset 3px 0 0 var(--red),var(--glow-fault); border-color:var(--red);}
+  38% {box-shadow:inset 3px 0 0 var(--red); border-color:var(--red);}
+  62% {box-shadow:inset 3px 0 0 var(--red),var(--glow-fault); border-color:var(--red);}
+  100%{box-shadow:inset 3px 0 0 var(--red); border-color:var(--red);}
+}
+/* 变化值：新旧叠放交叉淡入淡出（updating 语义；静态字段完全不参与）*/
+[data-m-swap]{position:relative; display:inline-grid; vertical-align:baseline;}
+[data-m-swap]>*{grid-area:1/1; animation-duration:var(--m-dur-update);}
+[data-m-swap]>*{--d:var(--m-update-at);}
+[data-m-swap]>.v-old{animation-name:m-swap-old; opacity:1;}
+[data-m-swap]>.v-new{animation-name:m-swap-new; opacity:0;}
+/* 变化字段：单元格内嵌一层脉冲（box 级）+ 变化值文字着色（字级）。
+   脉冲层自带 --d，绝不与 [data-m-stag] 的构建错峰抢占同一元素的 --d */
+.cell.chg{position:relative;}
+.cell.chg>.m-upd{position:absolute; inset:0; z-index:0; pointer-events:none;}
+.cell.chg>.lb,.cell.chg>.vl{position:relative; z-index:1;}
+.chg .vl{animation-name:m-upd-tint; animation-duration:var(--m-dur-update); --d:var(--m-update-at);}
+
+/* 语义性「活着」的低频微动（seek 时一并定格，保证帧可复现）*/
+@keyframes rl-seal{0%,52%{opacity:1;}53%,100%{opacity:.42;}}
+@keyframes rl-breathe{0%,100%{opacity:1;}50%{opacity:.34;}}
+@keyframes rl-blink{0%,49%{opacity:1;}50%,100%{opacity:.22;}}
+@keyframes rl-flow{from{background-position:-120px 0;}to{background-position:120px 0;}}
+@keyframes rl-feed{from{background-position:0 0,0 0;}to{background-position:24px 24px,24px 24px;}}
+@keyframes rl-proj{from{transform:translateY(-40px) scaleX(.25);opacity:0;}
+                   20%{opacity:.9;} to{transform:translateY(560px) scaleX(1.05);opacity:0;}}
+
+/* ── 时间轴定格（帧捕获）：暂停页面上「全部」动画。
+   ⚠ 这里必须是通配选择器：逐个列举 selector 一定会漏（漏一个就多一处实时漂移，
+   同一 seek 参数两次渲染就不再逐像素一致）。全站仅此一处强制覆盖。── */
+html.seek *,
+html.seek *::before,
+html.seek *::after{animation-play-state:paused !important;}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2 · 壳 / 品牌带 / rail / spine（继承 v1 结构与排版，仅接 motion token）
+   ══════════════════════════════════════════════════════════════════════════ */
+.shell{
+  position:relative; z-index:0;
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto;
+  height:100vh; min-height:100vh; overflow:hidden;
+}
+/* L0：档案网格底（24px 工程网格，缓慢进纸）*/
+.shell::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:var(--l0-op);
+  background-image:
+    linear-gradient(var(--rule-1) 1px,transparent 1px),
+    linear-gradient(90deg,var(--rule-1) 1px,transparent 1px);
+  background-size:24px 24px;
+  animation:rl-feed 26s linear infinite;
+}
+.marks{position:absolute; inset:6px; z-index:3; pointer-events:none;}
+.marks i{position:absolute; width:9px; height:9px;}
+.marks i::before{content:""; position:absolute; inset:0; border:1px solid var(--rule-4);}
+.marks i:nth-child(1){top:0; left:0;} .marks i:nth-child(2){top:0; right:0;}
+.marks i:nth-child(3){bottom:0; left:0;} .marks i:nth-child(4){bottom:0; right:0;}
+.marks i:nth-child(1)::before{border-right:0; border-bottom:0;}
+.marks i:nth-child(2)::before{border-left:0; border-bottom:0;}
+.marks i:nth-child(3)::before{border-right:0; border-top:0;}
+.marks i:nth-child(4)::before{border-left:0; border-top:0;}
+
+.band{
+  position:relative; z-index:2;
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:22px;
+  padding:13px 20px 12px; background:var(--layer1);
+  border-bottom:1px solid var(--rule-4);
+}
+.brand{display:flex; align-items:center; gap:12px;}
+.mark{
+  width:36px; height:36px; flex:none; display:grid; place-items:center;
+  border:1px solid var(--rule-4); box-shadow:3px 3px 0 rgba(255,135,50,.18);
+  font:700 10px/1 var(--f-mono); letter-spacing:.04em; color:var(--amber-hi);
+}
+.brand .stack{display:flex; flex-direction:column; gap:3px;}
+.wordmark{font:700 21px/1 var(--f-disp); letter-spacing:.055em; color:var(--ink);}
+.wordmark small{font:600 9px/1 var(--f-mono); letter-spacing:.2em; color:var(--ink-4); margin-left:10px;}
+.tagline{font:600 8.5px/1 var(--f-mono); letter-spacing:.21em; color:var(--ink-3); text-transform:uppercase;}
+.band-cap{display:flex; align-items:center; justify-content:center; gap:12px; min-width:0;}
+.band-cap .txt{
+  font:600 8.5px/1 var(--f-mono); letter-spacing:.16em; color:var(--ink-4);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.seal{
+  flex:none; padding:3px 6px; border:1px solid var(--cyan); color:var(--cyan);
+  font:700 8px/1 var(--f-mono); letter-spacing:.14em;
+}
+.seal.rl-alive{animation:rl-seal 2.4s steps(2,end) infinite;}
+.band-meta{display:flex; flex-direction:column; align-items:flex-end; gap:4px; text-align:right;}
+.band-meta .r1,.band-meta .r2{display:flex; align-items:center; gap:9px;
+  font:400 9px/1 var(--f-mono); letter-spacing:.09em; color:var(--ink-3);}
+.band-meta .r2{font-weight:600; letter-spacing:.13em; color:var(--ink-4);}
+.band-meta .r1 b{color:var(--ink); font-weight:600;}
+.band-meta .clk{color:var(--ink); letter-spacing:.06em;}
+.band-meta .clk b{color:var(--amber-hi); font-weight:700;}
+.band-meta .clk b.rl-alive{animation:rl-blink 2s steps(1,end) infinite;}
+.dot{width:5px; height:5px; background:var(--cyan); display:inline-block; flex:none;}
+.vsep{color:var(--rule-4);}
+/* 数据龄是「会变化的数据」⇒ 快照刷新时按 updating 语义局部动画（band 与对象同步）*/
+.age-cell{display:inline-block; padding:0 2px;}
+
+.deck{
+  position:relative; z-index:1; display:grid;
+  grid-template-columns:88px 22px minmax(0,1fr) 404px; min-height:0;
+}
+.rail{grid-column:1; display:flex; flex-direction:column; min-height:0;
+  border-right:1px solid var(--rule-2); background:rgba(24,29,34,.42);}
+.rail-item{
+  position:relative; display:block; padding:13px 9px 12px 11px; text-decoration:none;
+  border-bottom:1px solid var(--rule-1); color:var(--ink-5);
+  transition:color var(--m-dur-focus) var(--m-ease), background-color var(--m-dur-focus) var(--m-ease);
+}
+.rail-item .idx{display:block; font:700 8px/1 var(--f-mono); letter-spacing:.13em; margin-bottom:8px;}
+.rail-item .lbl{display:block; font:600 8.5px/1.3 var(--f-mono); letter-spacing:.12em;}
+.rail-item:hover{color:var(--ink-3); background:rgba(233,232,225,.03);}
+.rail-item[aria-current="page"]{color:var(--ink); background:var(--amber-tint); box-shadow:inset 3px 0 0 var(--amber);}
+.rail-item[aria-current="page"] .idx{color:var(--amber-hi);}
+.rail-spine{margin-top:auto; display:flex; justify-content:center; padding:16px 0 18px;}
+.rail-spine span{writing-mode:vertical-rl; transform:rotate(180deg);
+  font:600 7.5px/1 var(--f-mono); letter-spacing:.34em; color:var(--ink-5); text-transform:uppercase;}
+.spine{grid-column:2; border-right:1px solid var(--rule-1); display:flex; flex-direction:column;
+  align-items:center; justify-content:space-between; padding:14px 0; overflow:hidden;}
+.spine .up,.spine .dn{font:600 7.5px/1 var(--f-mono); letter-spacing:.3em; color:var(--ink-5);}
+.spine .up{writing-mode:vertical-rl; transform:rotate(180deg);}
+.spine .dn{writing-mode:vertical-rl;}
+.spine .tick{width:1px; flex:1; background:var(--rule-2); margin:10px 0;}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3 · 档案阵列（L1/L2）—— 继承 v1；新增 focus/de-focus 与 record 对象就地展开
+   ══════════════════════════════════════════════════════════════════════════ */
+.array{grid-column:3; display:flex; flex-direction:column; min-width:0; min-height:0;
+  border-right:1px solid var(--rule-3); background:rgba(17,21,25,.62);
+  transition:opacity var(--m-dur-focus) var(--m-ease), filter var(--m-dur-focus) var(--m-ease);
+  will-change:opacity;}
+/* Focus：背景「不重绘」，只让合成层变暗 ⇒ 焦点移动而不是页面切换 */
+.deck[data-focus="object"] .array{opacity:.62; filter:saturate(.88) contrast(.97);}
+.deck[data-focus="object"] .rail,
+.deck[data-focus="object"] .spine{opacity:.55; transition:opacity var(--m-dur-focus) var(--m-ease);}
+.array-head{flex:none; padding:11px 18px 0;}
+.head-row{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+.array-title{font:600 13px/1.1 var(--f-disp); letter-spacing:.06em; color:var(--ink);}
+.array-cap{font:600 8px/1 var(--f-mono); letter-spacing:.2em; color:var(--ink-5); text-transform:uppercase;}
+.keep{display:flex; align-items:center; gap:6px; margin-left:auto;}
+.icon-btn{
+  border:1px solid var(--rule-2); background:transparent; color:var(--ink-4);
+  font:400 10px/1 var(--f-mono); padding:4px 7px; cursor:pointer; border-radius:0;
+  transition:color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease);
+}
+.icon-btn:hover{color:var(--ink); border-color:var(--rule-4);}
+.tabs{display:flex; align-items:flex-end; gap:20px; margin-top:10px; border-bottom:1px solid var(--rule-2);}
+.tab{
+  border:0; background:transparent; cursor:pointer; padding:0 0 8px; border-bottom:1px solid transparent;
+  color:var(--ink-4); font:600 9px/1 var(--f-mono); letter-spacing:.13em; text-transform:uppercase;
+  transition:color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease);
+}
+.tab:hover{color:var(--ink-2);}
+.tab[data-deputy-tab-active]{color:var(--ink); border-bottom-color:var(--amber);}
+.buckets{display:grid; grid-template-columns:repeat(5,1fr); margin-top:10px; border:1px solid var(--rule-2);}
+.bucket{padding:5px 9px 6px; border-right:1px solid var(--rule-1);}
+.bucket:last-child{border-right:0;}
+.bucket .bl{display:block; font:600 7.5px/1 var(--f-mono); letter-spacing:.16em; color:var(--ink-4); margin-bottom:5px;}
+.bucket .bv{font:600 14px/1 var(--f-mono); letter-spacing:.02em; color:var(--ink-5);}
+.bucket[data-live="1"]{box-shadow:inset 0 2px 0 var(--cyan); background:var(--cyan-tint);}
+.bucket[data-live="1"] .bv{color:var(--cyan-hi); text-shadow:var(--glow-live);}
+.bucket[data-live="1"] .bl{color:var(--ink-3);}
+.cols{display:grid; grid-template-columns:var(--gut) minmax(0,1fr) var(--met);
+  align-items:end; padding:0 0 6px; margin-top:10px; border-bottom:1px solid rgba(233,232,225,.5);}
+.cols span{font:600 7.5px/1 var(--f-mono); letter-spacing:.17em; color:var(--ink-4); text-transform:uppercase;}
+.cols span:nth-child(2){padding-left:15px;}
+.cols span:nth-child(3){text-align:right;}
+.cols em{font-style:normal; color:var(--ink-5); letter-spacing:.12em;}
+.pane{flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; scrollbar-width:none; -ms-overflow-style:none;}
+.pane::-webkit-scrollbar{display:none; width:0; height:0;}
+.group{display:flex; align-items:center; gap:9px; padding:8px 18px 6px; border-bottom:1px solid var(--rule-2);}
+.group .gd{width:5px; height:5px; flex:none; transform:rotate(45deg); background:var(--ink-3);}
+.group[data-deputy-group-tone="brand"] .gd{background:var(--cyan);}
+.group .gl{font:600 9px/1 var(--f-mono); letter-spacing:.15em; color:var(--ink-2);}
+.group .gc{margin-left:auto; font:600 9px/1 var(--f-mono); letter-spacing:.1em; color:var(--ink-5);}
+
+.record{
+  --tone:var(--neutral);
+  position:relative; display:grid;
+  grid-template-columns:var(--gut) minmax(0,1fr) var(--met);
+  border-bottom:1px solid var(--rule-1); border-left:3px solid var(--tone);
+  cursor:pointer; transition:background-color var(--m-dur-focus) var(--m-ease);
+}
+.record:hover{background:rgba(233,232,225,.028);}
+.record.active{background:rgba(255,135,50,.055);}
+.record.active::after{content:""; position:absolute; top:0; bottom:0; right:0; width:2px; background:var(--amber);}
+.record[data-dimmed="1"]{opacity:.5;}
+.rec-folio{padding:11px 0 0; display:flex; justify-content:center; border-right:1px solid var(--rule-2);}
+.rec-folio b{font:700 11px/1 var(--f-mono); letter-spacing:.02em; color:var(--ink-4);}
+.record.active .rec-folio b{color:var(--amber-hi);}
+.rec-body{padding:9px 16px 10px; min-width:0;}
+.rec-l1{display:flex; align-items:baseline; gap:10px; min-width:0;}
+.rec-name{font:600 14px/1.15 var(--f-disp); letter-spacing:.02em; color:var(--ink); flex:none;}
+.rec-pri{font:600 8px/1 var(--f-mono); letter-spacing:.1em; color:var(--ink-5); border:1px solid var(--rule-2); padding:2px 4px;}
+.rec-job{font:400 9px/1 var(--f-mono); color:var(--ink-5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.rec-status{margin-left:auto; flex:none; display:flex; align-items:center; gap:6px;
+  font:600 9px/1 var(--f-mono); letter-spacing:.13em; color:var(--tone);}
+.rec-status .sq{width:5px; height:5px; background:var(--tone);}
+.rec-status .sq[data-deputy-breathe="1"]{animation:rl-breathe 1.9s var(--m-ease) infinite;}
+.rec-card{margin-top:5px; font:400 11.5px/1.4 var(--f-disp); color:var(--ink-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.rec-card.q{color:var(--ink-3);}
+.rec-meta{margin-top:7px; display:flex; flex-wrap:wrap; gap:3px 22px;}
+.kv{display:flex; align-items:baseline; gap:7px;}
+.kv .k{font:600 7.5px/1 var(--f-mono); letter-spacing:.15em; color:var(--ink-4); text-transform:uppercase;}
+.kv .v{font:400 11.5px/1 var(--f-mono); letter-spacing:.01em; color:var(--ink-2);}
+.rec-conform{margin-top:7px; display:flex; align-items:center; gap:14px;}
+.rec-conform .txt{font:400 9.5px/1 var(--f-mono); letter-spacing:.02em; color:var(--ink-3);}
+.rec-conform .txt .mk{color:var(--tone); font-weight:700;}
+.rec-conform .txt .sep{color:var(--rule-4);}
+.track{position:relative; height:3px; flex:1; max-width:170px; background:rgba(166,181,188,.13);}
+.track i{position:absolute; left:0; top:0; bottom:0; display:block; background:var(--tone);}
+.track.absent{background:transparent; border-top:1px dashed var(--rule-2); height:0;}
+.rec-metric{border-left:1px solid var(--rule-1); padding:9px 15px;
+  display:flex; flex-direction:column; align-items:flex-end; justify-content:center; gap:4px;}
+.rec-metric .big{font:700 28px/1 var(--f-mono); letter-spacing:-.01em; color:var(--ink);
+  font-variant-numeric:tabular-nums; text-shadow:0 0 18px rgba(233,232,225,.16);}
+.record.active .rec-metric .big{color:var(--amber); text-shadow:0 0 20px rgba(255,135,50,.34);}
+.rec-metric .cap{font:600 7px/1 var(--f-mono); letter-spacing:.16em; color:var(--ink-5); text-transform:uppercase; white-space:nowrap;}
+
+/* ── Expand：点 record ⇒ 对象「自身」就地展开（不是 card→modal），信息层涌现 ── */
+.rec-holo{
+  grid-column:1 / -1; min-width:0; overflow:hidden;
+  max-height:0; opacity:0; border-top:1px solid transparent;
+  transition:max-height var(--m-dur-open) var(--m-ease),
+             opacity var(--m-dur-open) var(--m-ease),
+             border-top-color var(--m-dur-open) var(--m-ease);
+}
+.record.is-open{border-bottom-color:var(--rule-2);}
+.record.is-open .rec-holo{max-height:200px; opacity:1; border-top-color:var(--rule-2);}
+.record.is-closing .rec-holo{
+  max-height:0; opacity:0; border-top-color:transparent;
+  transition:max-height var(--m-dur-close) var(--m-ease-out),
+             opacity var(--m-dur-close) var(--m-ease-out),
+             border-top-color var(--m-dur-close) var(--m-ease-out);
+}
+.rh-in{position:relative; margin:9px 16px 12px calc(var(--gut) + 4px); padding:9px 11px 10px;
+  background:linear-gradient(180deg,rgba(31,37,42,.55),rgba(24,29,34,.32));
+  border-left:2px solid var(--tone);}
+.rh-in::after{content:""; position:absolute; right:0; bottom:0; width:22%; height:1px; background:var(--rule-3);}
+.rh-cap{display:flex; align-items:center; gap:8px;
+  font:600 7.5px/1 var(--f-mono); letter-spacing:.16em; color:var(--ink-4); text-transform:uppercase;}
+.rh-cap .rt{margin-left:auto; color:var(--ink-5);}
+.rh-grid{margin-top:8px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px 12px;}
+.rh-grid .c{min-width:0;}
+.rh-grid .lb{display:block; font:600 7px/1 var(--f-mono); letter-spacing:.15em; color:var(--cyan-hi); text-transform:uppercase;}
+.rh-grid .vl{display:block; margin-top:5px; font:400 11px/1.3 var(--f-mono); color:var(--ink-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.rh-live{margin-top:8px; display:flex; align-items:center; gap:9px;
+  font:400 9px/1 var(--f-mono); color:var(--ink-3); letter-spacing:.03em;}
+.rh-live .spark{flex:1; height:2px;
+  background:repeating-linear-gradient(90deg,rgba(91,194,216,.55) 0 14px,transparent 14px 30px);
+  background-size:120px 2px;}
+.rh-live .spark.rl-alive{animation:rl-flow 3.4s linear infinite;}
+.rest{display:flex; align-items:center; gap:8px; padding:9px 18px 12px;
+  font:400 9px/1.5 var(--f-mono); letter-spacing:.06em; color:var(--ink-5);}
+.rest b{color:var(--ink-3); font-weight:400;}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4 · 记录面板 = 投影台（L3 活动信息对象 / L4 全息覆盖层）
+   ══════════════════════════════════════════════════════════════════════════ */
+.panel{
+  grid-column:4; position:relative; display:flex; flex-direction:column; min-height:0;
+  border-left:1px solid var(--rule-3); background:rgba(21,26,31,.66);
+  box-shadow:var(--edge-light);
+}
+/* L3：只有「活动对象」拿到玻璃材质（不是所有 panel 同层玻璃）*/
+.panel::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0;
+  background:linear-gradient(180deg,rgba(31,37,42,.80),rgba(17,21,25,.92));
+  transition:opacity var(--m-dur-open) var(--m-ease);
+  -webkit-backdrop-filter:blur(var(--l3-blur)) saturate(140%);
+  backdrop-filter:blur(var(--l3-blur)) saturate(140%);
+}
+.panel[data-live="1"]::before{opacity:1;}
+.panel-cap{
+  position:relative; z-index:5; flex:none; display:flex; align-items:center; gap:10px; padding:7px 15px;
+  border-bottom:1px solid var(--rule-2); background:rgba(24,29,34,.55);
+  font:700 8px/1.2 var(--f-mono); letter-spacing:.14em; color:var(--ink-4); text-transform:uppercase;
+}
+.panel-cap .oid{color:var(--ink-2); font-weight:600; letter-spacing:.06em;}
+.panel-cap .oc{
+  padding:2px 6px; border:1px solid var(--cyan-lo); color:var(--cyan-hi);
+  background:var(--cyan-tint); font-weight:700; letter-spacing:.14em; white-space:nowrap;
+}
+.panel-cap .rt{margin-left:auto; color:var(--ink-5); font-weight:600; letter-spacing:.12em;}
+.icb{
+  border:1px solid var(--rule-2); background:transparent; color:var(--ink-4); cursor:pointer; border-radius:0;
+  font:600 9px/1 var(--f-mono); padding:3px 6px; white-space:nowrap;
+  transition:color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease),
+             background-color var(--m-dur-focus) var(--m-ease);
+}
+.icb:hover{color:var(--ink); border-color:var(--rule-4);}
+.icb[aria-pressed="true"]{color:var(--amber-hi); border-color:var(--amber); background:var(--amber-tint);}
+
+/* 投影台（不退化为 Card：边界留缺口、几何外溢、metadata 悬浮出界）*/
+.stage{position:relative; z-index:1; flex:1 1 auto; min-height:0; display:flex; flex-direction:column;}
+.hl{position:absolute; inset:0; pointer-events:none;}
+.hl-l1{z-index:0;} .hl-l3{z-index:2;} .hl-l4{z-index:6;}
+.par{position:absolute; inset:0; will-change:transform;
+  transform:translate3d(calc(var(--par) * var(--pk,0)),calc(var(--par) * var(--pky,0)),0);}
+
+/* L1：档案读取微网格（对象被投影时才亮起；次要语言）*/
+.holo-grid{
+  position:absolute; inset:0; opacity:.14;
+  background-image:
+    linear-gradient(var(--rule-1) 1px,transparent 1px),
+    linear-gradient(90deg,var(--rule-1) 1px,transparent 1px);
+  background-size:12px 12px;
+}
+.stage[data-state="active"] .holo-grid,
+.stage[data-state="updating"] .holo-grid{opacity:.30;}
+
+/* ② 结构几何：测量十字 + 向量迹线 + 边缘刻度 */
+.holo-geo{position:absolute; inset:0; overflow:hidden;}
+.holo-geo .g-h{position:absolute; height:1px; left:6%; right:6%;
+  background:linear-gradient(90deg,transparent,var(--rule-3) 12%,var(--rule-4) 50%,var(--rule-3) 88%,transparent);}
+.holo-geo .g-v{position:absolute; width:1px; top:8%; bottom:8%;
+  background:linear-gradient(180deg,transparent,var(--rule-3) 14%,var(--rule-4) 50%,var(--rule-3) 86%,transparent);}
+.holo-geo .g1{top:25%;} .holo-geo .g2{top:73%;}
+.holo-geo .g-v.g1{left:23%;} .holo-geo .g-v.g2{left:79%;}
+.ruler{position:absolute; left:0; top:0; bottom:0; width:10px; opacity:.5;
+  background-image:repeating-linear-gradient(180deg,var(--rule-4) 0 1px,transparent 1px 12px);}
+
+/* ① 对象边界：四角定位角标 + 带缺口的上下定位线（边界不闭合 ⇒ 不是 Card）*/
+.holo-frame{position:absolute; inset:7px 9px 8px 6px; overflow:hidden;}
+.holo-frame .fc{position:absolute; width:13px; height:13px; opacity:.62;}
+.holo-frame .fc::before{content:""; position:absolute; inset:0; border:1px solid var(--amber);}
+.holo-frame .fc1{top:0;left:0;}  .holo-frame .fc2{top:0;right:0;}
+.holo-frame .fc3{bottom:0;left:0;}.holo-frame .fc4{bottom:0;right:0;}
+.holo-frame .fc1::before{border-right:0;border-bottom:0;}
+.holo-frame .fc2::before{border-left:0;border-bottom:0;}
+.holo-frame .fc3::before{border-right:0;border-top:0;}
+.holo-frame .fc4::before{border-left:0;border-top:0;}
+.holo-frame::before,.holo-frame::after{content:""; position:absolute; height:1px;
+  background:linear-gradient(90deg,var(--amber),var(--amber-lo)); opacity:.66;}
+.holo-frame::before{top:0; left:16px; width:42%;}
+.holo-frame::after{bottom:0; right:16px; width:32%;}
+.holo-frame .sd{position:absolute; background:linear-gradient(180deg,var(--amber-lo),var(--amber)); opacity:.5;}
+.holo-frame .sd1{left:0; top:24%; height:24%; width:1px;}
+.holo-frame .sd2{right:0; bottom:22%; height:20%; width:1px;}
+.holo-frame .dm{position:absolute; background:var(--rule-4); opacity:.7;}
+.holo-frame .dm1{top:0; left:16px; width:1px; height:7px;}
+.holo-frame .dm2{top:0; right:16px; width:1px; height:7px;}
+.holo-frame .dm3{bottom:0; left:16px; width:1px; height:7px;}
+.holo-frame .dm4{bottom:0; right:16px; width:1px; height:7px;}
+.stage[data-state="active"] .holo-frame,
+.stage[data-state="updating"] .holo-frame{filter:drop-shadow(0 0 10px rgba(255,135,50,.20));}
+.stage[data-state="fault"] .holo-frame{filter:drop-shadow(0 0 12px rgba(244,100,88,.34));}
+.stage[data-state="fault"] .holo-frame .fc::before{border-color:var(--red);}
+
+/* 瞬时投影掠过：每一次对象构建只发生一次（＝projection pass，不是扫描线装饰）*/
+.holo-scan{position:absolute; left:4%; right:4%; top:6%; height:2px; opacity:0; z-index:7; pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,168,99,.95),rgba(142,224,240,.75),transparent);
+  box-shadow:0 0 14px rgba(255,168,99,.4);}
+
+/* L4：悬浮信息对象（跨出对象边界 ⇒ 悬浮 metadata，不是卡片标题栏）*/
+.holo-float{
+  position:absolute; z-index:8; display:flex; align-items:center; gap:5px;
+  padding:2px 6px; background:rgba(20,25,30,.9); border:1px solid var(--rule-3);
+  font:700 7.5px/1 var(--f-mono); letter-spacing:.16em; text-transform:uppercase;
+  -webkit-backdrop-filter:blur(var(--l4-blur)); backdrop-filter:blur(var(--l4-blur));
+}
+.holo-float.f1{top:-7px; left:-9px; color:var(--amber-hi); border-color:var(--amber-lo);}
+.holo-float.f2{top:31%; right:-10px; color:var(--cyan-hi); border-color:var(--cyan-lo);}
+.holo-float.f3{bottom:64px; left:-9px; color:var(--ink-3);}
+.holo-float .sq{width:4px; height:4px; background:currentColor;}
+.holo-float .sq.rl-alive{animation:rl-breathe 2.6s var(--m-ease) infinite;}
+/* 交互提示层（⑦）+ Before/After 读数：投影台底部的一条仪表条
+   —— 占自己的行高（flex:0 0 auto），不覆盖对象数据；只在该层的时间点出现。
+   ⚠ 高度必须写死：条内文字（中文 label）的墨高会随 state 文案变 1px，
+   若让内容撑高，投影台高度就会随状态漂移 ⇒ 同一对象的相邻帧不再逐像素可比。*/
+.holo-hint{position:relative; z-index:9; flex:0 0 26px; height:26px; overflow:hidden;
+  white-space:nowrap;
+  display:flex; align-items:center; gap:10px; padding:5px 10px;
+  background:linear-gradient(180deg,rgba(17,21,25,.72),rgba(12,16,19,.97));
+  border-top:1px solid var(--rule-2);
+  font:600 7px/1 var(--f-mono); letter-spacing:.12em; color:var(--ink-5); text-transform:uppercase;}
+.holo-hint .hmode,.holo-hint .rt{flex:0 0 auto;}
+.holo-hint .hint-mid{flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis;}
+/* 窄档位：交互提示让位给「当前语义」读数（读数才是 Before/After 的证据）*/
+@media (max-width:1160px){ .holo-hint .hint-mid{display:none;} }
+.holo-hint .rt{margin-left:auto; color:var(--ink-4);}
+.holo-hint .hmode{padding:2px 6px; border:1px solid var(--rule-3);
+  font-weight:700; letter-spacing:.15em; color:var(--ink-4); white-space:nowrap;}
+.holo-hint .hmode b{color:var(--cyan-hi); font-weight:700;}
+html.mode-v1 .holo-hint .hmode b{color:var(--ink-3);}
+
+/* ── 面板正文（继承 v1 文档面排版）── */
+.panel-body{position:relative; z-index:1; flex:1 1 auto; min-height:0;
+  overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
+.panel-body::-webkit-scrollbar{display:none; width:0;}
+.doc-head{padding:16px 16px 0;}
+.kicker{display:flex; align-items:baseline; gap:10px;}
+.kicker .k{font:600 8px/1 var(--f-mono); letter-spacing:.17em; color:var(--cyan-hi); text-transform:uppercase;}
+.kicker .rt{margin-left:auto; font:600 8px/1 var(--f-mono); letter-spacing:.13em; color:var(--ink-5);}
+.doc-title{margin-top:9px; font:700 30px/1 var(--f-disp); letter-spacing:.01em; color:var(--ink);}
+.doc-title.mono{font-family:var(--f-mono); font-size:24px; letter-spacing:0; font-weight:600;}
+.doc-sub{margin-top:9px; display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+.chip{
+  display:inline-flex; align-items:center; gap:6px; padding:3px 7px;
+  border:1px solid var(--tone,var(--rule-4)); color:var(--tone,var(--ink-2));
+  font:600 8.5px/1 var(--f-mono); letter-spacing:.12em;
+}
+.chip .sq{width:4px; height:4px; background:currentColor;}
+.chip.plain{border-color:var(--rule-2); color:var(--ink-4);}
+.chip.plain b{color:var(--ink-2); font-weight:600;}
+.doc-rule{height:1px; background:rgba(233,232,225,.42); margin-top:13px;}
+.doc-tabs{position:relative; display:flex; align-items:flex-end; gap:18px; margin-top:12px;
+  border-bottom:1px solid var(--rule-2);}
+.dtab{
+  border:0; background:transparent; padding:0 0 8px; cursor:pointer; border-bottom:1px solid transparent;
+  color:var(--ink-5); font:600 9px/1 var(--f-mono); letter-spacing:.13em;
+  transition:color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease);
+}
+.dtab:hover{color:var(--ink-2);}
+.dtab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--amber);}
+.dtab em{font-style:normal; color:var(--ink-5); margin-left:5px; font-size:7.5px; letter-spacing:.14em;}
+.dpane{padding:14px 16px 44px;}
+.dpane[hidden]{display:none;}
+
+/* ④ 主数据：大数字（比 v1 更亮、更重 ⇒ 可辨性）*/
+.bignum{display:grid; grid-template-columns:1fr 1fr; gap:1px;
+  background:var(--rule-1); border:1px solid var(--rule-2); margin-bottom:14px;}
+.bignum .n{background:rgba(17,21,25,.72); padding:11px 12px 12px; min-width:0;}
+.bignum .lb{display:block; font:600 7.5px/1 var(--f-mono); letter-spacing:.16em;
+  color:var(--cyan-hi); text-transform:uppercase;}
+.bignum .vl{display:block; margin-top:8px; font:700 32px/1 var(--f-mono);
+  letter-spacing:-.02em; color:var(--ink); font-variant-numeric:tabular-nums;
+  text-shadow:0 0 22px rgba(233,232,225,.20);}
+.bignum .vl small{font:400 9px/1 var(--f-mono); color:var(--ink-4); margin-left:6px; letter-spacing:.05em;}
+.bignum .vl.tone{color:var(--tone,var(--ink)); text-shadow:none;}
+.bignum .note{margin-top:7px; display:block; font:400 8.5px/1.5 var(--f-mono); color:var(--ink-5);}
+
+.sec-label{
+  display:flex; align-items:baseline; gap:8px; padding-bottom:6px; margin-bottom:12px;
+  border-bottom:1px solid var(--rule-2);
+  font:600 8px/1 var(--f-mono); letter-spacing:.17em; color:var(--ink-4); text-transform:uppercase;
+}
+.sec-label .rt{margin-left:auto; color:var(--ink-5); font-weight:600;}
+/* ⑤ 次级 metadata：字段标签用 cyan（可辨性）*/
+.meta{display:grid; grid-template-columns:1fr 1fr; gap:13px 16px;}
+.meta .cell{min-width:0; padding:5px 7px 6px; border-left:1px solid var(--rule-1);
+  transition:box-shadow var(--m-dur-update) var(--m-ease), background-color var(--m-dur-update) var(--m-ease);}
+.meta .cell.frozen{border-left-style:dashed; border-left-color:var(--rule-2);}
+.meta .lb{display:block; font:600 7.5px/1 var(--f-mono); letter-spacing:.15em;
+  color:var(--cyan-hi); text-transform:uppercase;}
+.meta .vl{display:block; margin-top:6px; font:400 12.5px/1.4 var(--f-disp); color:var(--ink); overflow-wrap:anywhere;}
+.meta .vl.mono{font-family:var(--f-mono); font-size:11.5px; letter-spacing:.01em; color:var(--ink-2);}
+.abstract{margin-top:16px;}
+.abstract p{margin-top:7px; font:400 12px/1.75 var(--f-disp); color:var(--ink-2);}
+.changeset{margin-top:12px; padding:8px 10px; border:1px solid var(--rule-2); border-left:2px solid var(--cyan);
+  background:rgba(91,194,216,.05); font:400 9px/1.6 var(--f-mono); color:var(--ink-3); opacity:0;}
+.changeset b{color:var(--cyan-hi);}
+.legend{margin-top:16px; border-top:1px solid var(--rule-1); padding-top:11px;}
+.legend .gl{font:600 7.5px/1 var(--f-mono); letter-spacing:.16em; color:var(--ink-5); text-transform:uppercase;}
+.legend ul{margin-top:9px; display:flex; flex-wrap:wrap; gap:6px 16px;}
+.legend li{display:flex; align-items:center; gap:6px; font:400 9.5px/1 var(--f-mono); color:var(--ink-4); letter-spacing:.03em;}
+.legend i{width:5px; height:5px; display:block; flex:none;}
+/* ⑥ live / status 层：cyan 流动 = live data（低频，仅此处）*/
+.liveline{margin-top:12px; padding:8px 10px; border:1px solid var(--rule-2); border-left:2px solid var(--cyan);
+  display:flex; align-items:center; gap:10px;
+  font:400 9.5px/1.5 var(--f-mono); color:var(--ink-3); letter-spacing:.02em;}
+.liveline .flow{flex:none; width:46px; height:3px;
+  background:linear-gradient(90deg,rgba(91,194,216,0) 0%,rgba(91,194,216,.9) 50%,rgba(91,194,216,0) 100%);
+  background-size:46px 3px;}
+.liveline .flow.rl-alive{animation:rl-flow 2.6s linear infinite;}
+.liveline b{color:var(--cyan-hi); font-weight:600;}
+/* 遥测读数 */
+.gauges{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--rule-1); border:1px solid var(--rule-2);}
+.gauge{background:rgba(17,21,25,.72); padding:11px 12px 12px; min-width:0;}
+.gauge .lb{display:block; font:600 7.5px/1 var(--f-mono); letter-spacing:.15em;
+  color:var(--cyan-hi); text-transform:uppercase;}
+.gauge .vl{display:block; margin-top:7px; font:600 20px/1 var(--f-disp); color:var(--ink);
+  font-variant-numeric:tabular-nums; letter-spacing:.01em;}
+.gauge .vl small{font:400 9px/1 var(--f-mono); color:var(--ink-4); margin-left:6px; letter-spacing:.05em;}
+.gauge .vl.tone{color:var(--tone,var(--ink));}
+.gauge .note{margin-top:7px; font:400 8.5px/1.5 var(--f-mono); color:var(--ink-5); letter-spacing:.01em;}
+.gauge .track{margin-top:9px; max-width:none;}
+.hostline{margin-top:13px; padding:9px 11px; border:1px solid var(--rule-2); border-left:2px solid var(--cyan);
+  font:400 9.5px/1.5 var(--f-mono); color:var(--ink-3); letter-spacing:.02em;}
+.foot-note{margin-top:11px; font:400 8.5px/1.6 var(--f-mono); color:var(--ink-5); letter-spacing:.01em;}
+/* Evidence 文档卡（位移实影＝印刷套准，非模糊光晕）*/
+.doc-card{position:relative; border:1px solid var(--rule-3); background:rgba(17,21,25,.72);}
+.doc-card::after{content:""; position:absolute; left:5px; top:5px; right:-5px; bottom:-5px; z-index:-1;
+  background:var(--amber-tint);}
+.doc-card .cap{display:flex; align-items:center; gap:8px; padding:7px 10px; border-bottom:1px solid var(--rule-2);
+  font:700 8px/1.2 var(--f-mono); letter-spacing:.14em; color:var(--ink-4); text-transform:uppercase;}
+.doc-card .cap .rt{margin-left:auto; color:var(--ink-5);}
+.evi{display:grid; grid-template-columns:82px minmax(0,1fr); border-bottom:1px solid var(--rule-1);}
+.evi:last-child{border-bottom:0;}
+.evi .ek{padding:9px 10px; border-right:1px solid var(--rule-1);
+  font:600 7.5px/1.35 var(--f-mono); letter-spacing:.13em; color:var(--ink-4); text-transform:uppercase;}
+.evi .ev{padding:8px 10px; font:400 11px/1.5 var(--f-mono); color:var(--ink-2); overflow-wrap:anywhere;}
+.evi .ev.mut{color:var(--ink-5);}
+.evi.is-fault{border-left:2px solid var(--red); background:rgba(244,100,88,.05);}
+.evi.is-fault .ek{color:var(--red-hi);}
+.kinds{margin-top:12px; display:flex; flex-wrap:wrap; gap:7px;}
+.kinds span{padding:3px 7px; border:1px solid var(--rule-2); color:var(--ink-4);
+  font:600 8px/1 var(--f-mono); letter-spacing:.12em;}
+.evi-open{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:12px; width:100%; padding:10px 12px; cursor:pointer; border-radius:0;
+  border:1px solid var(--rule-4); background:transparent; color:var(--ink);
+  font:600 9px/1 var(--f-mono); letter-spacing:.14em;
+  transition:background-color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease);
+}
+.evi-open:hover{background:rgba(233,232,225,.05); border-color:var(--ink-3);}
+
+/* 动作条（可辨性吸收 v2：实心机构色主 / 描边次 / 红描边危险）*/
+.actions{
+  position:relative; z-index:5; flex:none; display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:8px;
+  padding:12px 16px 14px; border-top:1px solid var(--rule-3); background:rgba(24,29,34,.72);
+}
+.btn{
+  border-radius:0; cursor:pointer; padding:11px 12px; display:flex; align-items:center; gap:8px;
+  font:600 9px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; white-space:nowrap;
+  transition:background-color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease),
+             color var(--m-dur-focus) var(--m-ease), transform 90ms var(--m-ease-out);
+}
+.btn .rt{margin-left:auto; font-weight:400; letter-spacing:.06em; opacity:.72;}
+.btn.primary{border:1px solid var(--amber-edge); background:var(--amber); color:var(--on-amber);
+  box-shadow:0 0 0 1px rgba(255,215,154,.45),0 6px 18px rgba(0,0,0,.42);}
+.btn.primary:hover{background:var(--amber-hi);}
+.btn.primary:active{background:var(--amber-lo); transform:translateY(1px);}
+.btn.ghost{border:1px solid var(--rule-3); background:rgba(233,232,225,.03); color:var(--ink-2);}
+.btn.ghost:hover{border-color:var(--rule-4); color:var(--ink); background:rgba(233,232,225,.07);}
+.btn.danger{border:1px solid rgba(244,100,88,.5); background:rgba(244,100,88,.05); color:var(--red-hi);}
+.btn.danger:hover{background:var(--red-tint); border-color:var(--red);}
+.panel-foot{
+  position:relative; z-index:5; flex:none; display:flex; align-items:center; gap:10px; padding:7px 15px;
+  border-top:1px solid var(--rule-2); background:rgba(24,29,34,.6);
+  font:600 8px/1 var(--f-mono); letter-spacing:.13em; color:var(--ink-5); text-transform:uppercase;
+}
+.panel-foot .mark2{margin-left:auto; display:flex; align-items:center; gap:7px; color:var(--ink-4);}
+.panel-foot .mark2 i{width:20px; height:4px; background:var(--amber); display:block;}
+
+/* ── 极窄状态条 ── */
+.status{
+  position:relative; z-index:2; display:flex; align-items:center; gap:14px; height:26px;
+  padding:0 18px; border-top:1px solid var(--rule-3); background:var(--layer1);
+  font:400 8.5px/1 var(--f-mono); letter-spacing:.08em; color:var(--ink-4); white-space:nowrap; overflow:hidden;
+}
+.status .k{color:var(--ink-2);}
+.status .rt{margin-left:auto; display:flex; align-items:center; gap:14px;}
+.status .auth{color:var(--cyan-hi); letter-spacing:.14em; text-transform:uppercase;
+  border-right:3px solid var(--cyan); padding-right:9px;}
+.mode-sw{
+  border:1px solid var(--rule-3); background:transparent; color:var(--ink-4); cursor:pointer; border-radius:0;
+  font:700 8px/1 var(--f-mono); letter-spacing:.14em; padding:3px 7px; text-transform:uppercase;
+  transition:color var(--m-dur-focus) var(--m-ease), border-color var(--m-dur-focus) var(--m-ease);
+}
+.mode-sw:hover{color:var(--ink); border-color:var(--rule-4);}
+.mode-sw b{color:var(--amber-hi);}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5 · BEFORE / AFTER —— mode-v1 = Rhine Lab 静态面（全息层/动效/玻璃全部退场）
+   ══════════════════════════════════════════════════════════════════════════ */
+html.mode-v1 [data-m],
+html.mode-v1 [data-m-line]>*,html.mode-v1 [data-m-stag]>*,
+html.mode-v1 [data-m-swap]>*,html.mode-v1 .chg .vl,html.mode-v1 .m-upd,
+html.mode-v1 .record,html.mode-v1 .age-cell.is-upd{animation:none;}
+html.mode-v1 .hl-l1,html.mode-v1 .hl-l3,html.mode-v1 .hl-l4,
+html.mode-v1 .holo-scan{opacity:0; visibility:hidden;}
+html.mode-v1 .panel::before{opacity:1; -webkit-backdrop-filter:none; backdrop-filter:none;
+  background:rgba(24,29,34,.86);}
+html.mode-v1 .bignum .vl,html.mode-v1 .rec-metric .big{text-shadow:none;}
+html.mode-v1 .bucket[data-live="1"] .bv{text-shadow:none;}
+html.mode-v1 .btn.primary{box-shadow:4px 4px 0 rgba(233,232,225,.22);}
+html.mode-v1 .stage[data-state] .holo-frame{filter:none;}
+html.mode-v1 [data-m-swap]>.v-new{opacity:0; animation:none;}
+html.mode-v1 [data-m-swap]>.v-old{opacity:1; animation:none;}
+html.mode-v1 .age-cell.is-upd,html.mode-v1 .age-cell.is-upd [data-m-swap]>*,
+html.mode-v1 .evi.is-fault{animation:none;}
+html.mode-v1 .age-cell.is-upd [data-m-swap]>.v-old{opacity:1;}
+html.mode-v1 .age-cell.is-upd [data-m-swap]>.v-new{opacity:0;}
+/* Before：v1 没有 focus 压暗，也没有 record 的就地展开 */
+html.mode-v1 .deck[data-focus="object"] .array{opacity:1; filter:none;}
+html.mode-v1 .deck[data-focus="object"] .rail,
+html.mode-v1 .deck[data-focus="object"] .spine{opacity:1;}
+html.mode-v1 .rec-holo{max-height:0; opacity:0; border-top-color:transparent;}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6 · 响应式：1440 与 900 两档为主，另备 1180 / 760
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width:1180px){
+  :root{--gut:26px; --met:104px;}
+  .deck{grid-template-columns:74px 0 minmax(0,1fr) 352px;}
+  .spine{display:none;} .rail-spine{display:none;}
+  .doc-title{font-size:26px;} .doc-title.mono{font-size:21px;}
+  .bignum .vl{font-size:28px;}
+  .rec-metric .big{font-size:24px;}
+  .holo-float.f1{left:-4px;} .holo-float.f3{left:-4px;}
+}
+@media (max-width:820px){
+  .shell{height:auto; min-height:100vh; overflow:visible;}
+  body{overflow:auto;}
+  .deck{display:block;}
+  .marks{display:none;}
+  .rail{flex-direction:row; border-right:0; border-bottom:1px solid var(--rule-2);
+    overflow-x:auto; scrollbar-width:none;}
+  .rail::-webkit-scrollbar{display:none;}
+  .rail-item{border-bottom:0; border-right:1px solid var(--rule-1); padding:10px 14px; flex:none;}
+  .rail-item[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--amber);}
+  .array{border-right:0;}
+  .pane{overflow:visible;}
+  .panel{border-left:0; border-top:1px solid var(--rule-3);}
+  .stage{min-height:640px;}
+  .holo-float.f1,.holo-float.f3{left:0;}
+  .holo-float.f2{right:0;}
+  .deck{overflow-x:hidden;}
+  .panel::before{transition:none;}
+  .band{grid-template-columns:auto minmax(0,1fr); row-gap:9px;}
+  .band-cap{justify-content:flex-start; grid-column:1 / -1; order:3;}
+  .band-meta{align-items:flex-start; text-align:left; grid-column:1 / -1; order:4;}
+}
+@media (max-width:640px){
+  .cols{display:none;}
+  .record{grid-template-columns:var(--gut) minmax(0,1fr);}
+  .rec-metric{grid-column:2; border-left:0; border-top:1px solid var(--rule-1);
+    flex-direction:row; align-items:baseline; justify-content:flex-start; gap:10px; padding:9px 16px 11px;}
+  .rec-metric .big{font-size:20px;}
+  .rec-metric .cap{order:2;}
+  .rh-grid{grid-template-columns:1fr 1fr;}
+  .meta{grid-template-columns:1fr;}
+  .bignum{grid-template-columns:1fr;}
+  .actions{grid-template-columns:minmax(0,1fr);}
+  .status{height:auto; flex-wrap:wrap; padding:7px 14px; gap:5px 12px; white-space:normal;}
+  .status .rt{margin-left:0;}
+  .band{padding:11px 14px;}
+  .wordmark{font-size:17px;}
+  .holo-float.f2{right:-4px;}
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--m-rise:0px;}
+  .rl-alive{animation:none;}
+  html:not(.force-motion) [data-m],
+  html:not(.force-motion) [data-m-line]>*,
+  html:not(.force-motion) [data-m-stag]>*,
+  html:not(.force-motion) [data-m-swap]>*{animation:none;}
+}
+
+/* ── record 对象「就地展开」的信息层涌现：层间错峰由 transition-delay 承担 ── */
+.rec-holo .rh-cap,.rec-holo .rh-grid .c,.rec-holo .rh-live{opacity:0; transform:translateY(8px);
+  transition:opacity var(--m-dur-meta) var(--m-ease), transform var(--m-dur-meta) var(--m-ease);}
+.record.is-open .rec-holo .rh-cap{opacity:1; transform:none; transition-delay:60ms;}
+.record.is-open .rec-holo .rh-grid .c:nth-child(1){opacity:1; transform:none; transition-delay:120ms;}
+.record.is-open .rec-holo .rh-grid .c:nth-child(2){opacity:1; transform:none; transition-delay:170ms;}
+.record.is-open .rec-holo .rh-grid .c:nth-child(3){opacity:1; transform:none; transition-delay:220ms;}
+.record.is-open .rec-holo .rh-grid .c:nth-child(4){opacity:1; transform:none; transition-delay:270ms;}
+.record.is-open .rec-holo .rh-live{opacity:1; transform:none; transition-delay:330ms;}
+html.seek .rec-holo .rh-cap,html.seek .rec-holo .rh-grid .c,html.seek .rec-holo .rh-live,
+html.seek .rec-holo{transition:none;}
+.record.is-open.is-closing .rec-holo .rh-cap,
+.record.is-closing .rec-holo .rh-grid .c,
+.record.is-closing .rec-holo .rh-live{transition-delay:0ms;}
+
+/* ── updating 的闸门：只有对象进入 updating 态，变化字段才开始局部动画 ── */
+.stage:not([data-state="updating"]) .chg .vl,
+.stage:not([data-state="updating"]) [data-m-swap]>*,
+.stage:not([data-state="updating"]) .m-upd,
+.stage:not([data-state="updating"]) .m-upd-seal{animation:none;}
+/* band / status 的「数据龄」是同一份变化数据 ⇒ 由 JS 加 .is-upd 才动（默认静止）*/
+.age-cell [data-m-swap]>.v-old{animation-name:none; opacity:1;}
+.age-cell [data-m-swap]>.v-new{animation-name:none; opacity:0;}
+.age-cell.is-upd{animation-name:m-upd; animation-duration:var(--m-dur-update); --d:var(--m-update-at);}
+.age-cell.is-upd [data-m-swap]>.v-old{animation-name:m-swap-old; animation-duration:var(--m-dur-update);}
+.age-cell.is-upd [data-m-swap]>.v-new{animation-name:m-swap-new; animation-duration:var(--m-dur-update);}
+/* fault：只在错误字段局部脉冲（不让整页变红）*/
+.evi.is-fault{animation-name:m-fault; animation-duration:var(--m-dur-fault); --d:var(--fault-at,0);}
+
+/*@@P4@@*/
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="marks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <!-- ══ 品牌带（继承 v1；右端仅多一枚 MOTION 模式开关 = Before/After 入口）══ -->
+  <header class="band">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">AOS</div>
+      <div class="stack">
+        <h1 class="wordmark">DEPUTY<small>v2.0 · HOLO</small></h1>
+        <p class="tagline">Advanced Operations System</p>
+      </div>
+    </div>
+    <div class="band-cap">
+      <span class="txt">DEPUTY ARCHIVE ╱ 09-26 · AUTHORIZED RESEARCH TERMINAL</span>
+      <span class="seal rl-alive">SYNC</span>
+    </div>
+    <div class="band-meta">
+      <div class="r1">
+        <span class="dot"></span><span>在跑 <b class="mono">2</b></span>
+        <span class="vsep">│</span><span>需关注 <b class="mono">11</b></span>
+        <span class="vsep">│</span><span>通道 <b class="mono">9/10</b> 可用</span>
+      </div>
+      <div class="r2">
+        <span>SNAPSHOT 09-26 00:17:20</span>
+        <span class="vsep">│</span>
+        <span>数据龄 <b class="mono age-cell" data-age-slot data-m-swap><span class="v-old">9s</span><span class="v-new">3s</span></b></span>
+        <span class="vsep">│</span><span class="clk">--:--:--<b class="rl-alive">:</b></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ 主区 ══ -->
+  <main class="deck" data-focus="object">
+
+    <nav class="rail" aria-label="section">
+      <a class="rail-item" href="#operations" aria-current="page"><span class="idx">01</span><span class="lbl">OPERATIONS</span></a>
+      <a class="rail-item" href="#agents"><span class="idx">02</span><span class="lbl">AGENTS</span></a>
+      <a class="rail-item" href="#telemetry"><span class="idx">03</span><span class="lbl">TELEMETRY</span></a>
+      <a class="rail-item" href="#memory"><span class="idx">04</span><span class="lbl">MEMORY</span></a>
+      <a class="rail-item" href="#settings"><span class="idx">05</span><span class="lbl">SETTINGS</span></a>
+      <div class="rail-spine"><span>Research Record Index</span></div>
+    </nav>
+
+    <div class="spine" aria-hidden="true">
+      <span class="up">Internal Database</span>
+      <span class="tick"></span>
+      <span class="dn">Folio 01—06</span>
+    </div>
+
+    <section class="array" data-deputy-panel data-deputy-channel="resource">
+      <div class="array-head">
+        <div class="head-row">
+          <h2 class="array-title" data-deputy-title>副将活动</h2>
+          <span class="array-cap">／ Deputies · Active Records</span>
+          <span class="keep">
+            <button class="icon-btn" type="button" aria-label="重取">重取 ⟳</button>
+            <button class="icon-btn" type="button" aria-label="收起">收起 ✕</button>
+          </span>
+        </div>
+        <div class="tabs" data-deputy-tabs role="tablist">
+          <button class="tab" type="button" data-deputy-tab="deputies" data-deputy-tab-active role="tab" aria-selected="true">副将</button>
+          <button class="tab" type="button" data-deputy-tab="active" role="tab" aria-selected="false">Active</button>
+          <button class="tab" type="button" data-deputy-tab="attention" role="tab" aria-selected="false">Attention</button>
+          <button class="tab" type="button" data-deputy-tab="recent" role="tab" aria-selected="false">Recent</button>
+          <button class="tab" type="button" data-deputy-tab="notices" role="tab" aria-selected="false">公告板</button>
+        </div>
+        <div class="buckets" aria-label="bucket scale">
+          <div class="bucket" data-live="1"><span class="bl">在跑</span><span class="bv">2</span></div>
+          <div class="bucket"><span class="bl">待门禁</span><span class="bv">0</span></div>
+          <div class="bucket"><span class="bl">待审</span><span class="bv">0</span></div>
+          <div class="bucket"><span class="bl">待修</span><span class="bv">0</span></div>
+          <div class="bucket"><span class="bl">其它</span><span class="bv">0</span></div>
+        </div>
+        <div class="cols">
+          <span>FOLIO <em>/ 编号</em></span>
+          <span>DEPUTY <em>/ 副将 · 状态 · 卡</em></span>
+          <span>TOTAL <em>/ 累计</em></span>
+        </div>
+      </div>
+
+      <div class="pane" data-deputy-pane="deputies" role="tabpanel">
+        <div class="group" data-deputy-group-head="available" data-deputy-group-tone="brand">
+          <span class="gd"></span><span class="gl">副将 · 可用</span><span class="gc">9 / 10 通道</span>
+        </div>
+
+        <!-- 01 qoder（在跑 · 默认活动对象）-->
+        <article class="record active is-open m-plot" data-m style="--tone:var(--cyan)"
+          data-deputy-row="qoder" data-deputy-name="qoder" data-deputy-status="可用" data-deputy-status-tone="brand"
+          data-deputy-dot-state="blinking" data-deputy-priority="P1" data-deputy-enabled="1"
+          data-deputy-pending="9" data-deputy-total="156" data-deputy-age="9" data-deputy-bucket-state="活"
+          data-deputy-running="CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（换将重派·只此一件）"
+          data-deputy-inflight="20260926_075800-1fde57" data-deputy-snapshot-stale="0"
+          data-deputy-job="20260926_075800-1fde57" data-deputy-job-card="CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（换将重派·只此一件）"
+          data-deputy-job-status="running" data-deputy-job-tone="brand" data-deputy-breathe="1"
+          data-deputy-job-conform="undecidable" data-deputy-job-conform-mark="❓" data-deputy-job-conform-tone="warn"
+          data-deputy-job-progress="改 0 · 测 0✓0✗ · 门禁 —" data-deputy-job-progress-pct="0" data-deputy-job-eta-min="—"
+          data-deputy-job-stall-min="10" data-deputy-job-ran-sec="1482" data-deputy-session="—"
+          data-deputy-card="20260926_075800-1fde57">
+          <div class="rec-folio"><b>01</b></div>
+          <div class="rec-body">
+            <div class="rec-l1">
+              <span class="rec-name">qoder</span>
+              <span class="rec-pri mono">P1</span>
+              <span class="rec-job mono">#20260926_075800-1fde57</span>
+              <span class="rec-status"><span class="sq" data-deputy-breathe="1"></span>可用 · 在跑</span>
+            </div>
+            <p class="rec-card" title="CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（换将重派·只此一件）">CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（换将重派·只此一件）</p>
+            <div class="rec-meta">
+              <span class="kv"><span class="k">PENDING / 待收</span><span class="v">9</span></span>
+              <span class="kv"><span class="k">TOTAL / 累计</span><span class="v">156</span></span>
+              <span class="kv"><span class="k">AGE / 数据龄</span><span class="v">9s</span></span>
+              <span class="kv"><span class="k">IN-FLIGHT / 接单中</span><span class="v">1</span></span>
+              <span class="kv"><span class="k">CHANNEL / 通道状态</span><span class="v">可用</span></span>
+            </div>
+            <div class="rec-conform">
+              <span class="txt">符合 <span class="mk">❓</span> <span class="sep">·</span> 进度 已跑 24m42s <span class="sep">·</span> ETA — <span class="sep">·</span> 停滞 10s</span>
+              <span class="track" title="进度：无数据（progress.files 0 / card.files 1）"><i style="width:0%"></i></span>
+            </div>
+          </div>
+          <div class="rec-metric"><span class="big">156</span><span class="cap">TOTAL / 累计</span></div>
+          <div class="rec-holo">
+            <div class="rh-in">
+              <div class="rh-cap"><span>OBJECT · RECORD / 记录</span><span class="rt">就地展开 · 非模态</span></div>
+              <div class="rh-grid">
+                <span class="c"><span class="lb">JOB / 单号</span><span class="vl">20260926_075800-1fde57</span></span>
+                <span class="c"><span class="lb">STATE / 状态</span><span class="vl">running</span></span>
+                <span class="c"><span class="lb">CONFORM / 符合</span><span class="vl">❓ 不可判定</span></span>
+                <span class="c"><span class="lb">RAN / 已跑</span><span class="vl">24m42s</span></span>
+              </div>
+              <div class="rh-live"><span class="flow-dot">●</span><span>动态监测 3s 前</span><span class="spark rl-alive"></span><span>停滞 10s</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 02 dsh2（在跑）-->
+        <article class="record m-plot" data-m style="--tone:var(--cyan)"
+          data-deputy-row="dsh2" data-deputy-name="dsh2" data-deputy-status="可用" data-deputy-status-tone="brand"
+          data-deputy-dot-state="blinking" data-deputy-priority="P7" data-deputy-enabled="1"
+          data-deputy-pending="8" data-deputy-total="13" data-deputy-age="9" data-deputy-bucket-state="活"
+          data-deputy-running="面板两件：①恢复顶部分段进度条（用户裁决）②Evidence 补「点击后」截图与六项内容断言（含缺项则修）"
+          data-deputy-inflight="20260926_075008-8d48cd" data-deputy-snapshot-stale="0"
+          data-deputy-job="20260926_075008-8d48cd" data-deputy-job-card="面板两件：①恢复顶部分段进度条（用户裁决）②Evidence 补「点击后」截图与六项内容断言（含缺项则修）"
+          data-deputy-job-status="running" data-deputy-job-tone="brand" data-deputy-breathe="1"
+          data-deputy-job-conform="undecidable" data-deputy-job-conform-mark="❓" data-deputy-job-conform-tone="warn"
+          data-deputy-job-progress="改 0 · 测 0✓0✗ · 门禁 —" data-deputy-job-progress-pct="0" data-deputy-job-eta-min="—"
+          data-deputy-job-stall-min="—" data-deputy-job-ran-sec="1614" data-deputy-session="—"
+          data-deputy-card="20260926_075008-8d48cd">
+          <div class="rec-folio"><b>02</b></div>
+          <div class="rec-body">
+            <div class="rec-l1">
+              <span class="rec-name">dsh2</span>
+              <span class="rec-pri mono">P7</span>
+              <span class="rec-job mono">#20260926_075008-8d48cd</span>
+              <span class="rec-status"><span class="sq" data-deputy-breathe="1"></span>可用 · 在跑</span>
+            </div>
+            <p class="rec-card" title="面板两件：①恢复顶部分段进度条（用户裁决）②Evidence 补「点击后」截图与六项内容断言（含缺项则修）">面板两件：①恢复顶部分段进度条（用户裁决）②Evidence 补「点击后」截图与六项内容断言（含缺项则修）</p>
+            <div class="rec-meta">
+              <span class="kv"><span class="k">PENDING / 待收</span><span class="v">8</span></span>
+              <span class="kv"><span class="k">TOTAL / 累计</span><span class="v">13</span></span>
+              <span class="kv"><span class="k">AGE / 数据龄</span><span class="v">9s</span></span>
+              <span class="kv"><span class="k">IN-FLIGHT / 接单中</span><span class="v">1</span></span>
+              <span class="kv"><span class="k">CHANNEL / 通道状态</span><span class="v">可用</span></span>
+            </div>
+            <div class="rec-conform">
+              <span class="txt">符合 <span class="mk">❓</span> <span class="sep">·</span> 进度 已跑 26m54s <span class="sep">·</span> ETA — <span class="sep">·</span> 停滞 —</span>
+              <span class="track" title="进度：无数据（progress.files 0 / card.files 1）"><i style="width:0%"></i></span>
+            </div>
+          </div>
+          <div class="rec-metric"><span class="big">13</span><span class="cap">TOTAL / 累计</span></div>
+          <div class="rec-holo">
+            <div class="rh-in">
+              <div class="rh-cap"><span>OBJECT · RECORD / 记录</span><span class="rt">就地展开 · 非模态</span></div>
+              <div class="rh-grid">
+                <span class="c"><span class="lb">JOB / 单号</span><span class="vl">20260926_075008-8d48cd</span></span>
+                <span class="c"><span class="lb">STATE / 状态</span><span class="vl">running</span></span>
+                <span class="c"><span class="lb">CONFORM / 符合</span><span class="vl">❓ 不可判定</span></span>
+                <span class="c"><span class="lb">RAN / 已跑</span><span class="vl">26m54s</span></span>
+              </div>
+              <div class="rh-live"><span class="flow-dot">●</span><span>动态监测 3s 前</span><span class="spark rl-alive"></span><span>停滞 —</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 03 jc2（末态 failed）-->
+        <article class="record m-plot" data-m style="--tone:var(--red)"
+          data-deputy-row="jc2" data-deputy-name="jc2" data-deputy-status="可用" data-deputy-status-tone="brand"
+          data-deputy-dot-state="steady" data-deputy-priority="P3" data-deputy-enabled="1"
+          data-deputy-pending="20" data-deputy-total="87" data-deputy-age="9" data-deputy-bucket-state="活"
+          data-deputy-running="" data-deputy-inflight="" data-deputy-snapshot-stale="0"
+          data-deputy-job="20260926_075530-4c8e60" data-deputy-job-card="CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（只此一件）"
+          data-deputy-job-status="failed" data-deputy-job-tone="error" data-deputy-breathe="0"
+          data-deputy-job-conform="" data-deputy-job-conform-mark="—" data-deputy-job-conform-tone="neutral"
+          data-deputy-job-progress="改 1 · 测 0✓0✗ · 门禁 —" data-deputy-job-progress-pct="—" data-deputy-job-eta-min="—"
+          data-deputy-job-stall-min="—" data-deputy-job-ran-sec="91" data-deputy-session="—"
+          data-deputy-card="20260926_075530-4c8e60">
+          <div class="rec-folio"><b>03</b></div>
+          <div class="rec-body">
+            <div class="rec-l1">
+              <span class="rec-name">jc2</span>
+              <span class="rec-pri mono">P3</span>
+              <span class="rec-job mono">#20260926_075530-4c8e60</span>
+              <span class="rec-status"><span class="sq"></span>可用 · 空闲</span>
+            </div>
+            <p class="rec-card" title="CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（只此一件）">末次卡 · CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（只此一件）</p>
+            <div class="rec-meta">
+              <span class="kv"><span class="k">PENDING / 待收</span><span class="v">20</span></span>
+              <span class="kv"><span class="k">TOTAL / 累计</span><span class="v">87</span></span>
+              <span class="kv"><span class="k">AGE / 数据龄</span><span class="v">9s</span></span>
+              <span class="kv"><span class="k">STATE / 末态</span><span class="v" style="color:var(--red)">failed</span></span>
+            </div>
+            <div class="rec-conform">
+              <span class="txt">符合 <span class="mk">—</span> <span class="sep">·</span> 进度 已跑 1m31s <span class="sep">·</span> ETA — <span class="sep">·</span> 停滞 —</span>
+              <span class="track absent" title="快照未带 jobConform[id]；进度 pct 任一侧 ≤0 ⇒ 显「—」"></span>
+            </div>
+          </div>
+          <div class="rec-metric"><span class="big">87</span><span class="cap">TOTAL / 累计</span></div>
+          <div class="rec-holo">
+            <div class="rh-in">
+              <div class="rh-cap"><span>OBJECT · RECORD / 记录</span><span class="rt">末态 · 只读</span></div>
+              <div class="rh-grid">
+                <span class="c"><span class="lb">JOB / 单号</span><span class="vl">20260926_075530-4c8e60</span></span>
+                <span class="c"><span class="lb">STATE / 末态</span><span class="vl" style="color:var(--red)">failed</span></span>
+                <span class="c"><span class="lb">CONFORM / 符合</span><span class="vl">— 无读数</span></span>
+                <span class="c"><span class="lb">RAN / 已跑</span><span class="vl">1m31s</span></span>
+              </div>
+              <div class="rh-live"><span class="flow-dot">●</span><span>进度：无数据</span><span class="spark"></span><span>停滞 —</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 04 loomy（空闲）-->
+        <article class="record m-plot" data-m style="--tone:rgba(166,181,188,.34)"
+          data-deputy-row="loomy" data-deputy-name="loomy" data-deputy-status="可用" data-deputy-status-tone="brand"
+          data-deputy-dot-state="steady" data-deputy-priority="P4" data-deputy-enabled="1"
+          data-deputy-pending="10" data-deputy-total="163" data-deputy-age="9" data-deputy-bucket-state="活"
+          data-deputy-running="" data-deputy-inflight="" data-deputy-snapshot-stale="0"
+          data-deputy-job="" data-deputy-job-card="" data-deputy-job-status="idle" data-deputy-job-tone="neutral"
+          data-deputy-breathe="0" data-deputy-job-conform="" data-deputy-job-conform-mark="—" data-deputy-job-conform-tone="neutral"
+          data-deputy-job-progress="—" data-deputy-job-progress-pct="—" data-deputy-job-eta-min="—"
+          data-deputy-job-stall-min="—" data-deputy-job-ran-sec="—" data-deputy-session="—" data-deputy-card="">
+          <div class="rec-folio"><b>04</b></div>
+          <div class="rec-body">
+            <div class="rec-l1">
+              <span class="rec-name">loomy</span>
+              <span class="rec-pri mono">P4</span>
+              <span class="rec-job mono">#—</span>
+              <span class="rec-status"><span class="sq"></span>可用 · 空闲</span>
+            </div>
+            <p class="rec-card q">空闲（没有在跑的卡）</p>
+            <div class="rec-meta">
+              <span class="kv"><span class="k">PENDING / 待收</span><span class="v">10</span></span>
+              <span class="kv"><span class="k">TOTAL / 累计</span><span class="v">163</span></span>
+              <span class="kv"><span class="k">AGE / 数据龄</span><span class="v">9s</span></span>
+              <span class="kv"><span class="k">IN-FLIGHT / 接单中</span><span class="v">0</span></span>
+              <span class="kv"><span class="k">CHANNEL / 通道状态</span><span class="v">可用</span></span>
+            </div>
+            <div class="rec-conform">
+              <span class="txt">符合 <span class="mk">—</span> <span class="sep">·</span> 进度 无数据 <span class="sep">·</span> ETA — <span class="sep">·</span> 停滞 —</span>
+              <span class="track absent" title="进度：无数据（没有在跑的卡）"></span>
+            </div>
+          </div>
+          <div class="rec-metric"><span class="big">163</span><span class="cap">TOTAL / 累计</span></div>
+          <div class="rec-holo">
+            <div class="rh-in">
+              <div class="rh-cap"><span>OBJECT · RECORD / 记录</span><span class="rt">空闲 · 无在跑卡</span></div>
+              <div class="rh-grid">
+                <span class="c"><span class="lb">JOB / 单号</span><span class="vl">—</span></span>
+                <span class="c"><span class="lb">STATE / 状态</span><span class="vl">idle</span></span>
+                <span class="c"><span class="lb">CONFORM / 符合</span><span class="vl">— 无读数</span></span>
+                <span class="c"><span class="lb">RAN / 已跑</span><span class="vl">—</span></span>
+              </div>
+              <div class="rh-live"><span class="flow-dot">●</span><span>进度：无数据</span><span class="spark"></span><span>停滞 —</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 05 dsh（空闲）-->
+        <article class="record m-plot" data-m style="--tone:rgba(166,181,188,.34)"
+          data-deputy-row="dsh" data-deputy-name="dsh" data-deputy-status="可用" data-deputy-status-tone="brand"
+          data-deputy-dot-state="steady" data-deputy-priority="P6" data-deputy-enabled="1"
+          data-deputy-pending="5" data-deputy-total="129" data-deputy-age="9" data-deputy-bucket-state="活"
+          data-deputy-running="" data-deputy-inflight="" data-deputy-snapshot-stale="0"
+          data-deputy-job="" data-deputy-job-card="" data-deputy-job-status="idle" data-deputy-job-tone="neutral"
+          data-deputy-breathe="0" data-deputy-job-conform="" data-deputy-job-conform-mark="—" data-deputy-job-conform-tone="neutral"
+          data-deputy-job-progress="—" data-deputy-job-progress-pct="—" data-deputy-job-eta-min="—"
+          data-deputy-job-stall-min="—" data-deputy-job-ran-sec="—" data-deputy-session="—" data-deputy-card="">
+          <div class="rec-folio"><b>05</b></div>
+          <div class="rec-body">
+            <div class="rec-l1">
+              <span class="rec-name">dsh</span>
+              <span class="rec-pri mono">P6</span>
+              <span class="rec-job mono">#—</span>
+              <span class="rec-status"><span class="sq"></span>可用 · 空闲</span>
+            </div>
+            <p class="rec-card q">空闲（没有在跑的卡）</p>
+            <div class="rec-meta">
+              <span class="kv"><span class="k">PENDING / 待收</span><span class="v">5</span></span>
+              <span class="kv"><span class="k">TOTAL / 累计</span><span class="v">129</span></span>
+              <span class="kv"><span class="k">AGE / 数据龄</span><span class="v">9s</span></span>
+              <span class="kv"><span class="k">IN-FLIGHT / 接单中</span><span class="v">0</span></span>
+              <span class="kv"><span class="k">CHANNEL / 通道状态</span><span class="v">可用</span></span>
+            </div>
+            <div class="rec-conform">
+              <span class="txt">符合 <span class="mk">—</span> <span class="sep">·</span> 进度 无数据 <span class="sep">·</span> ETA — <span class="sep">·</span> 停滞 —</span>
+              <span class="track absent" title="进度：无数据（没有在跑的卡）"></span>
+            </div>
+          </div>
+          <div class="rec-metric"><span class="big">129</span><span class="cap">TOTAL / 累计</span></div>
+          <div class="rec-holo">
+            <div class="rh-in">
+              <div class="rh-cap"><span>OBJECT · RECORD / 记录</span><span class="rt">空闲 · 无在跑卡</span></div>
+              <div class="rh-grid">
+                <span class="c"><span class="lb">JOB / 单号</span><span class="vl">—</span></span>
+                <span class="c"><span class="lb">STATE / 状态</span><span class="vl">idle</span></span>
+                <span class="c"><span class="lb">CONFORM / 符合</span><span class="vl">— 无读数</span></span>
+                <span class="c"><span class="lb">RAN / 已跑</span><span class="vl">—</span></span>
+              </div>
+              <div class="rh-live"><span class="flow-dot">●</span><span>进度：无数据</span><span class="spark"></span><span>停滞 —</span></div>
+            </div>
+          </div>
+        </article>
+
+        <div class="group" data-deputy-group-head="unavailable" data-deputy-group-tone="neutral">
+          <span class="gd"></span><span class="gl">副将 · 暂不可用</span><span class="gc">1 / 10 通道</span>
+        </div>
+
+        <!-- 06 generic（已停用）-->
+        <article class="record m-plot" data-m data-dimmed="1" style="--tone:rgba(166,181,188,.28)"
+          data-deputy-row="generic" data-deputy-name="generic" data-deputy-status="已停用" data-deputy-status-tone="neutral"
+          data-deputy-dot-state="halted" data-deputy-priority="P5" data-deputy-enabled="0"
+          data-deputy-pending="0" data-deputy-total="0" data-deputy-age="9" data-deputy-bucket-state="未知"
+          data-deputy-running="" data-deputy-inflight="" data-deputy-snapshot-stale="0" data-deputy-unavailable="1"
+          data-deputy-block="" data-deputy-job="" data-deputy-job-card="" data-deputy-job-status=""
+          data-deputy-job-tone="neutral" data-deputy-breathe="0" data-deputy-job-conform=""
+          data-deputy-job-conform-mark="—" data-deputy-job-conform-tone="neutral" data-deputy-job-progress="—"
+          data-deputy-job-progress-pct="—" data-deputy-job-eta-min="—" data-deputy-job-stall-min="—"
+          data-deputy-job-ran-sec="—" data-deputy-session="—" data-deputy-card="">
+          <div class="rec-folio"><b>06</b></div>
+          <div class="rec-body">
+            <div class="rec-l1">
+              <span class="rec-name">generic</span>
+              <span class="rec-pri mono">P5</span>
+              <span class="rec-job mono">#—</span>
+              <span class="rec-status"><span class="sq"></span>已停用 · 不可用</span>
+            </div>
+            <p class="rec-card q">停用原因 —（快照未带 dispatchBlock / reason）</p>
+            <div class="rec-meta">
+              <span class="kv"><span class="k">PENDING / 待收</span><span class="v">0</span></span>
+              <span class="kv"><span class="k">TOTAL / 累计</span><span class="v">0</span></span>
+              <span class="kv"><span class="k">AGE / 数据龄</span><span class="v">9s</span></span>
+              <span class="kv"><span class="k">BUCKET / 桶态</span><span class="v">未知</span></span>
+            </div>
+          </div>
+          <div class="rec-metric"><span class="big">0</span><span class="cap">TOTAL / 累计</span></div>
+          <div class="rec-holo">
+            <div class="rh-in">
+              <div class="rh-cap"><span>OBJECT · RECORD / 记录</span><span class="rt">不可用 · 停用</span></div>
+              <div class="rh-grid">
+                <span class="c"><span class="lb">JOB / 单号</span><span class="vl">—</span></span>
+                <span class="c"><span class="lb">STATE / 状态</span><span class="vl">—</span></span>
+                <span class="c"><span class="lb">BUCKET / 桶态</span><span class="vl">未知</span></span>
+                <span class="c"><span class="lb">ENABLED / 启用</span><span class="vl">0</span></span>
+              </div>
+              <div class="rh-live"><span class="flow-dot">●</span><span>停用原因 —（快照未带）</span><span class="spark"></span><span>数据龄 9s</span></div>
+            </div>
+          </div>
+        </article>
+
+        <p class="rest">其余 <b>4</b> 条：<b>ac2 · codex · codebuddy · wb</b>（待收 16 / 0 / 10 / 10，累计 85 / 12 / 262 / 209）</p>
+      </div>
+    </section>
+
+    <!-- ══ 记录面板 ＝ 全息信息对象投影台 ══ -->
+    <aside class="panel" data-deputy-detail data-deputy-overlay-foot data-live="1">
+      <div class="panel-cap">
+        <span>RECORD / 记录 <span class="mono oid js-jobid">20260926_075800-1fde57</span></span>
+        <span class="oc js-objclass">OBJECT · AGENT</span>
+        <span class="rt" data-deputy-evidence-kind="result">READ-ONLY / 只读</span>
+        <button class="icb js-play" type="button" aria-pressed="false" title="播放一次组装/更新演示">▷ 演示</button>
+      </div>
+
+      <div class="stage" data-state="active" data-obj="agent">
+        <!-- L1 档案读取微网格（次要语言）-->
+        <div class="hl hl-l1 m-geo" data-m aria-hidden="true">
+          <div class="par" style="--pk:.3;--pky:.3">
+            <div class="holo-grid"></div>
+          </div>
+        </div>
+        <!-- ② 结构几何 -->
+        <div class="hl hl-l3" aria-hidden="true">
+          <div class="par" style="--pk:.9;--pky:.7">
+            <div class="holo-geo m-geo" data-m data-m-line>
+              <span class="g-h g1"></span><span class="g-h g2"></span>
+              <span class="g-v g1"></span><span class="g-v g2"></span>
+              <span class="ruler"></span>
+            </div>
+          </div>
+        </div>
+        <!-- ③ 对象边界（缺口 + 四角角标）-->
+        <div class="hl hl-l3" aria-hidden="true">
+          <div class="par" style="--pk:1.3;--pky:1">
+            <div class="holo-frame m-edge" data-m>
+              <span class="fc fc1"></span><span class="fc fc2"></span>
+              <span class="fc fc3"></span><span class="fc fc4"></span>
+              <span class="sd sd1"></span><span class="sd sd2"></span>
+              <span class="dm dm1"></span><span class="dm dm2"></span>
+              <span class="dm dm3"></span><span class="dm dm4"></span>
+            </div>
+          </div>
+        </div>
+        <!-- 瞬时投影掠过（每次构建一次）-->
+        <div class="holo-scan m-proj" data-m aria-hidden="true"></div>
+
+        <!-- L4 悬浮信息对象（跨出对象边界）-->
+        <div class="hl hl-l4" aria-hidden="true">
+          <span class="holo-float f1 m-hint" data-m>FOLIO <span class="js-folio">01</span></span>
+          <span class="holo-float f2 m-hint" data-m><span class="sq rl-alive"></span>LIVE · 投影中</span>
+          <span class="holo-float f3 m-hint" data-m>L4 · OVERLAY</span>
+        </div>
+        <!-- 交互提示层（⑦）已移出投影台：见 .panel-body 之后的同级条（避免遮住对象数据）-->
+
+        <div class="panel-body">
+          <div class="doc-head">
+            <div class="kicker">
+              <span class="k js-objline">OBJECT · AGENT / 副将实体</span>
+              <span class="rt">FOLIO <span class="js-folio">01</span> / 06</span>
+            </div>
+            <h3 class="doc-title js-name m-id" data-m>qoder</h3>
+            <div class="doc-sub m-id" data-m>
+              <span class="chip" style="--tone:var(--cyan)"><span class="sq"></span><span class="js-status">可用 · 在跑</span></span>
+              <span class="chip plain">桶态 <b class="js-bucket">活</b></span>
+              <span class="chip plain">优先 <b class="js-pri">P1</b></span>
+              <span class="chip plain">数据龄 <b class="js-age" data-deputy-age="9">9s</b></span>
+            </div>
+            <div class="doc-rule"></div>
+            <div class="doc-tabs" role="tablist">
+              <button class="dtab" type="button" role="tab" aria-selected="true" data-pane="agent">01 概览<em>AGENT</em></button>
+              <button class="dtab" type="button" role="tab" aria-selected="false" data-pane="record">02 遥测<em>RECORD</em></button>
+              <button class="dtab" type="button" role="tab" aria-selected="false" data-pane="evidence">03 Evidence<em>EVIDENCE</em></button>
+            </div>
+          </div>
+
+          <!-- ── 对象 ①：AGENT / 副将实体 ── -->
+          <div class="dpane" data-pane-body="agent">
+            <div class="bignum m-data" data-m data-m-stag>
+              <div class="n"><span class="lb">PENDING / 待收</span><span class="vl">9</span>
+                <span class="note">待收单号数（d.pendingJobs 长度）</span></div>
+              <div class="n"><span class="lb">TOTAL / 累计</span><span class="vl">156</span>
+                <span class="note">累计单数（d.totalJobs）</span></div>
+            </div>
+            <div class="sec-label m-meta" data-m>RECORD FIELDS / 档案字段<span class="rt">source: panel.json</span></div>
+            <div class="meta m-meta" data-m data-m-stag>
+              <div class="cell"><span class="lb">CHANNEL / 通道状态</span><span class="vl js-chan">可用</span></div>
+              <div class="cell"><span class="lb">BUCKET / 桶态</span><span class="vl js-bucket">活</span></div>
+              <div class="cell"><span class="lb">IN-FLIGHT / 接单中</span><span class="vl mono js-cardid" data-deputy-inflight="20260926_075800-1fde57">20260926_075800-1fde57</span></div>
+              <div class="cell"><span class="lb">MODE / 模式</span><span class="vl mono js-mode">edit · 1 file</span></div>
+              <div class="cell"><span class="lb">ACCEPTANCE / 验收</span><span class="vl mono js-accept">python check_rules.py</span></div>
+              <div class="cell"><span class="lb">SESSION / 会话</span><span class="vl mono js-session">—（快照未带 sessionId）</span></div>
+            </div>
+            <div class="abstract m-meta" data-m>
+              <div class="sec-label">SUMMARY / 摘要</div>
+              <p class="js-summary">CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（换将重派·只此一件）</p>
+              <p class="foot-note">REPORT / 报告：summary 为空 · verification 为空 ⇒ 本档案留白，不代填。</p>
+            </div>
+            <div class="liveline m-live" data-m>
+              <span class="flow rl-alive"></span>
+              <span>动态监测 <b>3s</b> 前</span><span class="vsep">│</span>
+              <span>停滞 <b class="js-stall">10s</b></span><span class="vsep">│</span>
+              <span>log 1KB</span>
+            </div>
+            <div class="legend">
+              <span class="gl">TONE READOUT / 色调读法</span>
+              <ul>
+                <li><i style="background:var(--cyan)"></i>在跑</li>
+                <li><i style="background:var(--cyan)"></i>已完成</li>
+                <li><i style="background:var(--red)"></i>出错了</li>
+                <li><i style="background:var(--amber)"></i>需要你处理</li>
+                <li><i style="background:var(--neutral)"></i>空闲或状态未知</li>
+                <li><i style="background:transparent;box-shadow:inset 0 0 0 1px var(--rule-4)"></i>符合 ✅ 合规 · ❌ 偏离 · ❓ 不可判定</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ── 对象 ②：RECORD / 作业记录 ── -->
+          <div class="dpane" data-pane-body="record" hidden>
+            <div class="sec-label m-meta" data-m>TELEMETRY / 遥测<span class="rt">progress 0%</span></div>
+            <div class="gauges m-data" data-m data-m-stag>
+              <div class="gauge" style="--tone:var(--amber)">
+                <span class="lb">CONFORM / 符合</span><span class="vl tone">❓</span>
+                <span class="note">status=running：任务仍在半写态，不可判定</span>
+              </div>
+              <div class="gauge"><span class="lb">ELAPSED / 已跑</span><span class="vl">24m42s</span>
+                <span class="note">改 0 · 测 0✓0✗ · 门禁 —</span></div>
+              <div class="gauge"><span class="lb">PROGRESS / 进度</span><span class="vl">0<small>%</small></span>
+                <span class="track" title="progress.files / detail.card.files"><i style="width:0%"></i></span></div>
+              <div class="gauge"><span class="lb">STALL / 停滞</span><span class="vl">—<small>停滞 10s</small></span></div>
+            </div>
+            <div class="sec-label m-meta" data-m style="margin-top:14px">RECORD OBJECT / 记录对象<span class="rt">source: job.*</span></div>
+            <div class="meta m-meta" data-m data-m-stag>
+              <div class="cell"><span class="lb">JOB / 单号</span><span class="vl mono">20260926_075800-1fde57</span></div>
+              <div class="cell"><span class="lb">DEPUTY / 副将</span><span class="vl mono">qoder</span></div>
+              <div class="cell"><span class="lb">STATE / 状态</span><span class="vl mono" style="color:var(--cyan-hi)">running</span></div>
+              <div class="cell"><span class="lb">GATE / 门禁</span><span class="vl mono">—（快照未带 jobHealth.gate）</span></div>
+              <div class="cell"><span class="lb">ACCEPTANCE / 验收</span><span class="vl mono">python check_rules.py</span></div>
+              <div class="cell"><span class="lb">ETA</span><span class="vl mono">—（宿主未挂 jobHealth）</span></div>
+            </div>
+            <div class="abstract m-meta" data-m>
+              <div class="sec-label">CARD / 卡</div>
+              <p>CONTEXT-RULE-01a 正文禁易腐内容入 rules.json（换将重派·只此一件）</p>
+            </div>
+            <div class="hostline m-live" data-m>进度：正在运行 · 动态监测 3s 前 · log 1KB</div>
+            <p class="foot-note">ETA 不外推：宿主未挂 jobHealth（eta_sec / eta_reason 进不来）⇒ 引擎算 ETA 须白名单字节增长样本 ≥3 点（deputy_health.py:356），面板侧无文件系统，故显「—」而非编数。</p>
+          </div>
+
+          <!-- ── 对象 ③：EVIDENCE / 证据项（更新过程的主角）── -->
+          <div class="dpane" data-pane-body="evidence" hidden>
+            <div class="bignum m-data" data-m data-m-stag>
+              <div class="n" style="--tone:var(--cyan)"><span class="lb">STATUS / 状态</span>
+                <span class="vl tone">running</span><span class="note">job.status 逐字透出（不自造词）</span></div>
+              <div class="n"><span class="lb">TIME / 时间</span><span class="vl" style="font-size:20px">2026-09-26 07:58:16</span>
+                <span class="note">job.at · 采集时刻</span></div>
+            </div>
+            <div class="sec-label m-meta" data-m>EVIDENCE / 证据<span class="rt">六项契约 · 只读</span></div>
+            <div class="doc-card m-meta" data-m data-deputy-evidence data-deputy-evidence-rows="type,source,status,time,summary,open">
+              <div class="cap">EVIDENCE / 证据<span class="rt" data-deputy-evidence-open="close">收起原文</span></div>
+              <div class="evi" data-deputy-evidence-row="type">
+                <span class="ek" data-deputy-evidence-label>TYPE / 类型</span>
+                <span class="ev" data-deputy-evidence-value>结果契约</span>
+              </div>
+              <div class="evi" data-deputy-evidence-row="source">
+                <span class="ek" data-deputy-evidence-label>SOURCE / 来源</span>
+                <span class="ev" data-deputy-evidence-value>deputy.py evidence 20260926_075800-1fde57 --kind result</span>
+              </div>
+              <div class="evi" data-deputy-evidence-row="status">
+                <span class="ek" data-deputy-evidence-label>STATUS / 状态</span>
+                <span class="ev" data-deputy-evidence-value>running</span>
+              </div>
+              <div class="evi" data-deputy-evidence-row="time">
+                <span class="ek" data-deputy-evidence-label>TIME / 时间</span>
+                <span class="ev" data-deputy-evidence-value>2026-09-26 07:58:16</span>
+              </div>
+              <div class="evi js-faultable" data-deputy-evidence-row="summary">
+                <span class="ek" data-deputy-evidence-label>SUMMARY / 摘要</span>
+                <span class="ev mut" data-deputy-evidence-value>—（快照 report.summary 为空，按冻结清单不代填）</span>
+              </div>
+            </div>
+
+            <!-- updating：只有变化的数据产生局部动画；未变字段保持静止 -->
+            <div class="sec-label" style="margin-top:16px">LIVE READOUT / 实时读数<span class="rt js-refresh">REFRESH #1 · 未刷新</span></div>
+            <div class="meta" data-m-stag>
+              <div class="cell chg">
+                <i class="m-upd" aria-hidden="true"></i>
+                <span class="lb">AGE / 数据龄</span>
+                <span class="vl mono" data-m-swap>
+                  <span class="v-old">9s</span><span class="v-new">3s</span>
+                </span>
+              </div>
+              <div class="cell chg">
+                <i class="m-upd" aria-hidden="true"></i>
+                <span class="lb">ELAPSED / 已跑</span>
+                <span class="vl mono" data-m-swap>
+                  <span class="v-old">24m42s</span><span class="v-new">24m54s</span>
+                </span>
+              </div>
+              <div class="cell chg">
+                <i class="m-upd" aria-hidden="true"></i>
+                <span class="lb">READ / 读取序次</span>
+                <span class="vl mono" data-m-swap>
+                  <span class="v-old">#1</span><span class="v-new">#2</span>
+                </span>
+              </div>
+              <div class="cell frozen">
+                <span class="lb">STALL / 停滞</span>
+                <span class="vl mono">10s</span>
+              </div>
+              <div class="cell frozen">
+                <span class="lb">SOURCE / 来源</span>
+                <span class="vl mono">deputy.py evidence --kind result</span>
+              </div>
+              <div class="cell frozen">
+                <span class="lb">KIND / 证据类型</span>
+                <span class="vl mono">result · 结果契约</span>
+              </div>
+            </div>
+            <!-- 更新封签：读序＝字段先变，再落封签（放在变化字段之后，避免未更新时在读数区里留洞）-->
+            <div class="changeset m-upd-seal">
+              <b>局部更新</b>：仅变化字段（AGE / ELAPSED / READ）播放动画；虚线左缘＝<b>保持不动</b>的字段。
+            </div>
+            <div class="kinds">
+              <span data-deputy-evidence-kind="dir">证据目录</span>
+              <span data-deputy-evidence-kind="result">结果契约</span>
+              <span data-deputy-evidence-kind="text">文本证据</span>
+              <span data-deputy-evidence-kind="file">文件</span>
+            </div>
+            <button class="evi-open" type="button" data-deputy-action="openEvidence" data-deputy-action-kind="safe" data-deputy-action-disabled="0" title="[Evidence] 只读，不改变任何状态">打开原文 →<span class="rt mono">read-only</span></button>
+            <p class="foot-note">空值整行不画（冻结清单 §⑦-8）；此处保留标签位以示六项契约，值一律取快照原样。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 交互提示层（⑦）：作为投影台的一条仪表条（占用自己的行高，不压对象数据）。
+           刻意放在 .hl-l4 之外：两种模式下都要在（Before 也要读得出当前语义）。-->
+      <div class="holo-hint m-hint" data-m>
+        <span class="hmode">MOTION · <b class="js-mode-tag">V2 HOLO OBJECT</b></span>
+        <span class="hint-mid">RECORD ⇒ 就地展开</span>
+        <span class="rt" data-scene-hint>CONSTRUCT / 组装中</span>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" data-deputy-action="approve" data-deputy-action-kind="safe" title="[Approve] 验收通过后本单进入正式状态">验收通过<span class="rt">Approve</span></button>
+        <button class="btn ghost" type="button" data-deputy-action="retry" data-deputy-action-kind="safe" title="[Retry] 将继续当前 Job">重试<span class="rt">Retry</span></button>
+        <button class="btn danger" type="button" data-deputy-action="cancel" data-deputy-action-kind="destructive" title="[Cancel] 取消后本次不会进入 Merge">取消<span class="rt">Cancel</span></button>
+      </div>
+      <div class="panel-foot">
+        <button class="icon-btn" type="button" data-deputy-detail-back>← 返回列表</button>
+        <span class="mark2">DEPUTY · AOS<i></i></span>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="status">
+    <span><span class="k">数据龄 <span class="age-cell" data-age-slot data-m-swap><span class="v-old">9s</span><span class="v-new">3s</span></span></span> · SNAPSHOT 09-26 00:17:20</span>
+    <span class="mono">│</span>
+    <span>在跑 <span class="k">2</span> · 待收 <span class="k">88</span> · 累计 <span class="k">1 116</span> 单</span>
+    <span class="mono">│</span>
+    <span>公告 6 活跃 / 213 归档 · 快照未陈旧</span>
+    <span class="rt">
+      <button class="mode-sw js-mode-sw" type="button" aria-pressed="false">MOTION <b>V2</b> ⇄ V1</button>
+      <span>SESSION AUTHORIZED</span>
+      <span class="auth">Access Permission ╱ Authorized</span>
+      <span>FILE NO. AOS-01</span>
+    </span>
+  </footer>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   AtlasMotion — 统一动效层
+   ── tokens      ：时长/曲线/错峰（与 CSS 的 --m-* 同源）
+   ── primitives  ：edge · geo · identity · data · meta · live · hint
+   ── states      ：idle · focused · selected · opening · active · updating · closing · fault
+   ── transitions ：focus / expand / collapse / activate / update / fault
+   面板与 block 只「声明角色」（data-m + 语义类），任何时长都不写在局部。
+   ══════════════════════════════════════════════════════════════════════════ */
+(function () {
+"use strict";
+
+var TOK = {
+  stagger:140, edge:420, geo:520, identity:440, data:460, meta:400, live:620, hint:320,
+  focus:280, open:320, close:260, updateAt:1600, updateDur:640, updateEnd:2240, fault:920
+};
+var PRIM = ["edge","geo","identity","data","meta","live","hint","upd","upd-seal","fault","plot"];
+var STATES = ["idle","focused","selected","opening","active","updating","closing","fault"];
+/* ⚠ 必须与 §1 的 primitive 时间基准选择器清单逐字一致 */
+var ANIM_SEL = "[data-m],[data-m-line]>*,[data-m-stag]>*,[data-m-swap]>*,"
+             + ".cell.chg>.m-upd,.chg .vl,.m-upd-seal,.evi.is-fault,.age-cell.is-upd,"
+             + ".record.m-plot";
+
+function doc(){ return document.documentElement; }
+function nodes(root){
+  return [].slice.call((root || document).querySelectorAll(ANIM_SEL));
+}
+function isFrozen(){ return doc().classList.contains("seek"); }
+
+var AtlasMotion = {
+  tokens: TOK,
+  primitives: PRIM.slice(),
+  states: STATES.slice(),
+
+  /* 时间轴定位 / 定格（帧捕获；实时播放时为 0 / false）*/
+  seek: function (ms) { doc().style.setProperty("--seek", String(ms)); return ms; },
+  freeze: function (on) { doc().classList.toggle("seek", !!on); return !!on; },
+  seekValue: function () { return parseFloat(doc().style.getPropertyValue("--seek")) || 0; },
+
+  /* 重新构建：让 primitive 从 0 重新播一次（实时模式；定格模式跳过）*/
+  replay: function (root) {
+    if (isFrozen()) { return; }
+    nodes(root).forEach(function (el) {
+      el.style.animation = "none";
+      void el.offsetWidth;
+      el.style.animation = "";
+    });
+  },
+
+  /* 对象状态机 */
+  state: function (el, s) {
+    if (!el || STATES.indexOf(s) < 0) { return null; }
+    el.setAttribute("data-state", s);
+    return s;
+  },
+
+  /* Focus：焦点移动 ⇒ 背景不重绘、只变暗（不是页面切换）*/
+  focus: function (on) {
+    var d = document.querySelector(".deck");
+    if (d) { d.setAttribute("data-focus", on ? "object" : "archive"); }
+    return on;
+  },
+
+  /* Expand / Collapse：对象自身就地展开与反向收束（不是 modal）*/
+  expand: function (rec) {
+    if (!rec) { return; }
+    rec.classList.remove("is-closing");
+    rec.classList.add("is-open");
+  },
+  collapse: function (rec) {
+    if (!rec) { return; }
+    rec.classList.remove("is-open");
+    rec.classList.add("is-closing");
+    window.setTimeout(function () { rec.classList.remove("is-closing"); }, TOK.close + 60);
+  },
+
+  /* Activate：把某个信息对象投影到台上并重跑构造（opening → active）*/
+  activate: function (stage, obj) {
+    if (!stage) { return; }
+    if (obj) { stage.setAttribute("data-obj", obj); }
+    if (isFrozen()) {
+      var ms = AtlasMotion.seekValue();
+      var constructEnd = TOK.stagger * 6 + TOK.hint;
+      AtlasMotion.state(stage, ms < constructEnd ? "opening" : "active");
+      return;
+    }
+    AtlasMotion.state(stage, "opening");
+    AtlasMotion.replay(stage);
+    window.setTimeout(function () { AtlasMotion.state(stage, "active"); }, TOK.open);
+  },
+
+  /* Update：只有变化的数据产生局部动画（其余保持静止）*/
+  update: function (stage) {
+    if (!stage) { return; }
+    AtlasMotion.state(stage, "updating");
+    [].slice.call(document.querySelectorAll("[data-age-slot]")).forEach(function (el) {
+      el.classList.add("is-upd");
+    });
+  },
+
+  /* Fault：只在错误字段/局部体现（不让整个界面变红）*/
+  fault: function (stage, target) {
+    if (!stage) { return; }
+    AtlasMotion.state(stage, "fault");
+    if (target) { target.classList.add("is-fault"); }
+    stage.style.setProperty("--fault-at", "0");
+    syncHint();
+  }
+};
+window.AtlasMotion = AtlasMotion;
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AtlasObject / Runtime —— 三种对象、同一 Motion Language、不同信息结构
+   record ＝ 作业记录对象 ｜ agent ＝ 副将实体对象 ｜ evidence ＝ 证据项对象
+   ══════════════════════════════════════════════════════════════════════════ */
+function syncHint() {
+  var sh = $("[data-scene-hint]");
+  if (!sh) { return; }
+  if (doc().classList.contains("mode-v1")) { sh.textContent = "STATIC / 静态档案"; return; }
+  var st = stage ? stage.getAttribute("data-state") : "";
+  sh.textContent = st === "updating" ? "UPDATING / 仅变化字段"
+                 : st === "fault"    ? "FAULT / 局部错误"
+                 : st === "opening"  ? "CONSTRUCT / 组装中"
+                 :                     "ACTIVE / 已投影";
+}
+
+var SCENES = {
+  agent:    { cls:"OBJECT · AGENT",    line:"OBJECT · AGENT / 副将实体",
+              title:"qoder", mono:false },
+  record:   { cls:"OBJECT · RECORD",   line:"OBJECT · RECORD / 作业记录",
+              title:"20260926_075800-1fde57", mono:true },
+  evidence: { cls:"OBJECT · EVIDENCE", line:"OBJECT · EVIDENCE / 证据项",
+              title:"结果契约", mono:false }
+};
+
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+
+var stage = $(".stage");
+var tabs = $$(".dtab");
+var panes = $$(".dpane[data-pane-body]");
+var records = $$(".record[data-deputy-name]");
+var current = "agent";
+
+function setScene(name, silent) {
+  var s = SCENES[name]; if (!s) { return; }
+  current = name;
+  tabs.forEach(function (t) {
+    var on = t.dataset.pane === name;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  panes.forEach(function (p) { p.hidden = p.dataset.paneBody !== name; });
+
+  if (stage) { stage.setAttribute("data-obj", name); }
+  var oc = $(".js-objclass"); if (oc) { oc.textContent = s.cls; }
+  var ol = $(".js-objline"); if (ol) { ol.textContent = s.line; }
+  var ti = $(".js-name");
+  if (ti) {
+    ti.textContent = s.title;
+    ti.classList.toggle("mono", !!s.mono);
+  }
+  var refreshEl = $(".js-refresh");
+  var beforeRefresh = isFrozen() && AtlasMotion.seekValue() < TOK.updateAt;
+  if (name === "evidence" && !beforeRefresh) {
+    AtlasMotion.update(stage);
+    if (refreshEl) { refreshEl.textContent = "REFRESH #2 · 3 项变化"; }
+  } else {
+    AtlasMotion.activate(stage, name);
+    if (refreshEl) { refreshEl.textContent = "REFRESH #1 · 未刷新"; }
+  }
+  syncHint();
+  if (!silent) { /* 对象类别切换 = 对象级 transition，不是整页重绘 */ }
+  return name;
+}
+
+/* ── 选择一条 record：对象自身就地展开 + 面板投影（焦点移动，不换页）── */
+var PANEL_MAP = {
+  ".js-jobid": "deputyJob",
+  ".js-bucket": "deputyBucketState",
+  ".js-pri": "deputyPriority",
+  ".js-cardid": "deputyInflight",
+  ".js-summary": "deputyJobCard"
+};
+function refill(rec) {
+  Object.keys(PANEL_MAP).forEach(function (sel) {
+    var el = $(sel); if (!el) { return; }
+    var v = rec.dataset[PANEL_MAP[sel]];
+    if (sel === ".js-summary") { v = rec.dataset.deputyJobCard || rec.dataset.deputyRunning; }
+    if (sel === ".js-jobid") { el = el; }
+    el.textContent = (v === undefined || v === "" || v === null) ? "—" : v;
+  });
+  var fol = $$(".js-folio"), idx = records.indexOf(rec);
+  fol.forEach(function (f) { f.textContent = ("0" + (idx + 1)).slice(-2); });
+}
+function select(rec, project) {
+  records.forEach(function (r) {
+    if (r === rec) { return; }
+    r.classList.remove("active");
+    if (r.classList.contains("is-open")) { AtlasMotion.collapse(r); }
+  });
+  rec.classList.add("active");
+  AtlasMotion.expand(rec);
+  refill(rec);
+  AtlasMotion.focus(true);
+  if (project !== false) { setScene("record"); }
+}
+
+records.forEach(function (rec) {
+  rec.setAttribute("tabindex", "0");
+  rec.addEventListener("click", function () { select(rec); });
+  rec.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(rec); }
+  });
+  rec.addEventListener("mouseenter", function () {
+    if (!rec.classList.contains("active")) { AtlasMotion.state(stage, "focused"); }
+  });
+  rec.addEventListener("mouseleave", function () {
+    if (!rec.classList.contains("active")) { AtlasMotion.state(stage, "active"); }
+  });
+});
+
+/* ── 对象透镜（01 概览 / 02 遥测 / 03 Evidence）＝ 对象类别切换 ── */
+tabs.forEach(function (t) {
+  t.addEventListener("click", function () { setScene(t.dataset.pane); });
+});
+
+/* ── 演示：一次真实运行（record → agent → evidence 更新）── */
+var play = $(".js-play"), playTimer = null;
+function runDemo() {
+  setScene("record");
+  window.clearTimeout(playTimer);
+  playTimer = window.setTimeout(function () { setScene("agent"); }, 1900);
+  playTimer = window.setTimeout(function () { setScene("evidence"); }, 3900);
+}
+if (play) {
+  play.addEventListener("click", function () {
+    var on = play.getAttribute("aria-pressed") === "true";
+    play.setAttribute("aria-pressed", on ? "false" : "true");
+    if (on) { window.clearTimeout(playTimer); AtlasMotion.activate(stage, current); }
+    else { runDemo(); }
+  });
+}
+
+/* ── Before / After：mode-v1 = Rhine Lab 静态面（全息层与动效退场）── */
+var modeSw = $(".js-mode-sw"), modeTags = $$(".js-mode-tag");
+function setMode(v1) {
+  doc().classList.toggle("mode-v1", !!v1);
+  modeTags.forEach(function (t) { t.textContent = v1 ? "V1 STATIC ARCHIVE" : "V2 HOLO OBJECT"; });
+  syncHint();
+  if (modeSw) {
+    modeSw.setAttribute("aria-pressed", v1 ? "true" : "false");
+    modeSw.innerHTML = "MOTION <b>" + (v1 ? "V1" : "V2") + "</b> ⇄ " + (v1 ? "V2" : "V1");
+  }
+}
+if (modeSw) { modeSw.addEventListener("click", function () { setMode(!doc().classList.contains("mode-v1")); }); }
+
+/* ── ESC：收束回档案（closing → idle 语义）── */
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    records.forEach(function (r) { if (r.classList.contains("is-open")) { AtlasMotion.collapse(r); } });
+    AtlasMotion.focus(false);
+    AtlasMotion.state(stage, "idle");
+  }
+});
+
+/* ── Parallax：L1/L3/L4 不同系数 ⇒ 光学深度（低频、仅指针移动时）── */
+if (stage) {
+  stage.addEventListener("pointermove", function (e) {
+    if (isFrozen()) { return; }
+    var r = stage.getBoundingClientRect();
+    var dx = (e.clientX - r.left) / Math.max(1, r.width) - .5;
+    var dy = (e.clientY - r.top) / Math.max(1, r.height) - .5;
+    stage.style.setProperty("--par", "8px");
+    stage.style.setProperty("--pk", (dx * -1).toFixed(3));
+    stage.style.setProperty("--pky", (dy * -1).toFixed(3));
+  });
+  stage.addEventListener("pointerleave", function () { stage.style.setProperty("--pk", 0); });
+}
+
+/* ── 仪器时钟（读数，不是装饰）——定格时不启动，避免帧内出现实时漂移 ── */
+var clock = $(".clk");
+function pad(n) { return (n < 10 ? "0" : "") + n; }
+if (clock && clock.firstChild && !isFrozen()) {
+  window.setInterval(function () {
+    var d = new Date();
+    clock.firstChild.nodeValue = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+  }, 1000);
+}
+
+/* ── 启动：URL 参数驱动（scene / t / fault / motion），供逐帧复现 ── */
+(function boot() {
+  var q = new URLSearchParams(window.location.search);
+  if (q.get("motion") === "1") { doc().classList.add("force-motion"); }
+  /* 定格优先：先钉住时间轴，再建对象 ⇒ 动画「出生即定格」，逐帧完全可复现 */
+  var t = q.get("t");
+  if (t !== null) {
+    AtlasMotion.seek(parseFloat(t) || 0);
+    AtlasMotion.freeze(true);
+  }
+  var scene = q.get("scene");
+  if (scene && SCENES[scene]) { setScene(scene, true); }
+  else { AtlasMotion.activate(stage, "agent"); }
+  /* 阅读位置：信息对象高于视口时，用 ?scroll=bottom | <px> 指定读到哪一段。
+     这是真实的滚动读数（不是裁图）：滚到底时对象的下内边距正好落在提示条上方。*/
+  var sc = q.get("scroll");
+  if (sc) {
+    var pb = $(".panel-body");
+    if (pb) { pb.scrollTop = (sc === "bottom") ? pb.scrollHeight : (parseInt(sc, 10) || 0); }
+  }
+  if (q.get("fault") === "1") {
+    AtlasMotion.fault(stage, $(".js-faultable"));
+  }
+  if (q.get("open") === "0") {
+    records.forEach(function (r) { r.classList.remove("is-open"); });
+  }
+})();
+})();
+</script>
+</body>
+</html>
+
+
+
